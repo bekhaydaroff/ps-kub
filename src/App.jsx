@@ -68,7 +68,7 @@ export default function PlayStationClub() {
     if (sd && Array.isArray(sd) && sd.length > 0) {
       setDevices(sd.map(d => ({ tuyaDeviceId: '', tvAutoControl: true, maintenance: false, vip: false, ...d })));
     } else {
-      const initial = Array.from({ length: 6 }, (_, i) => ({
+      const initial = Array.from({ length: 4 }, (_, i) => ({
         id: `dev_${Date.now()}_${i}`, name: `PS ${i + 1}`,
         running: false, startTime: null, tariffId: null,
         scheduledMinutes: null, alerted: false,
@@ -439,7 +439,14 @@ export default function PlayStationClub() {
         .layout.home-layout { grid-template-columns: minmax(0,1fr) 270px; }
         .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
         .col-side { gap: 10px; }
-        @media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } }
+        @media (max-width: 1100px) {
+          .layout { grid-template-columns: 1fr; }
+          .layout.home-layout { grid-template-columns: 1fr; }
+          .home-layout .dev-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (min-width: 1101px) {
+          .layout.fit { grid-template-rows: minmax(0,1fr); align-items: stretch; }
+        }
 
         /* ---------- KPI ---------- */
         .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 16px; }
@@ -483,6 +490,9 @@ export default function PlayStationClub() {
 
         /* ---------- DEVICE GRID ---------- */
         .dev-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+        .home-layout .dev-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+        .home-layout .dev-grid .dev { display: flex; flex-direction: column; }
+        .home-layout .dev-grid .dev-btns { margin-top: auto; padding-top: 12px; }
         .dev {
           border-radius: 18px; padding: 14px; position: relative;
           background: linear-gradient(160deg, rgba(12,24,54,0.9), rgba(7,14,34,0.9));
@@ -726,6 +736,26 @@ export default function PlayStationClub() {
           .home-layout .col-side .chart-val { display: none; }
           .home-layout .col-side .tad-ico { width: 26px; height: 26px; }
           .home-layout .col-side .tad { padding: 5px 8px; gap: 8px; }
+
+          /* 4 ta qurilmaga mo'ljallangan katta kartalar */
+          .home-layout .dev-grid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, minmax(0,1fr)); height: 100%; gap: 12px; }
+          .home-layout .dev-grid .dev { padding: 13px 15px; border-radius: 18px; justify-content: center; overflow: hidden; min-height: 0; }
+          .home-layout .dev-grid .dev-top { gap: 13px; }
+          .home-layout .dev-grid .screen { width: 58px; height: 43px; border-radius: 9px; }
+          .home-layout .dev-grid .screen svg { width: 24px; height: 24px; }
+          .home-layout .dev-grid .screen-stand { width: 20px; height: 5px; bottom: -6px; }
+          .home-layout .dev-grid .dev-name { font-size: 16.5px; }
+          .home-layout .dev-grid .dev-status { font-size: 12px; margin-top: 3px; }
+          .home-layout .dev-grid .dot { width: 8px; height: 8px; }
+          .home-layout .dev-grid .dev-meta { font-size: 11.5px; margin-top: 3px; }
+          .home-layout .dev-grid .vip-tag { font-size: 9.5px; padding: 2px 6px; }
+          .home-layout .dev-grid .dev-live { margin-top: 9px; padding: 8px 11px; border-radius: 11px; }
+          .home-layout .dev-grid .bar { height: 4px; margin-bottom: 6px; border-radius: 100px; }
+          .home-layout .dev-grid .timer { font-size: 18px; }
+          .home-layout .dev-grid .amt { font-size: 14px; }
+          .home-layout .dev-grid .dev-remain { font-size: 10.5px; margin-top: 3px; }
+          .home-layout .dev-grid .dev-btns { gap: 8px; padding-top: 9px; }
+          .home-layout .dev-grid .dev-btns .btn { padding: 9px 8px; font-size: 13px; border-radius: 11px; gap: 6px; }
         }
       `}</style>
 
