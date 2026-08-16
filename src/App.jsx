@@ -1,5 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Play, Square, Plus, Trash2, BarChart3, Clock, DollarSign, Gamepad2, X, Edit2, Bell, Calendar, TrendingUp, Volume2, VolumeX, Zap, Activity, Tv, Power, Settings, Wifi, WifiOff, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import {
+  Play, Square, Plus, Trash2, BarChart3, Clock, DollarSign, Gamepad2, X, Edit2,
+  Bell, Calendar, TrendingUp, Zap, Activity, Tv, Power, Settings, Wifi, WifiOff,
+  Wallet, Users, Home, Wrench, Timer, PauseCircle, CheckCircle2, LayoutGrid,
+} from 'lucide-react';
 
 const storage = {
   get: (key) => {
@@ -32,8 +36,20 @@ async function tuyaControl(deviceId, action) {
   }
 }
 
+const WEEKDAYS = ['Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba', 'Yakshanba'];
+const WEEKDAYS_SHORT = ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'];
+
+const MENU = [
+  { id: 'home', label: 'Bosh sahifa', sub: 'Umumiy holat', icon: Home, g: 'linear-gradient(135deg,#6d28d9,#a855f7)' },
+  { id: 'devices', label: 'Qurilmalar', sub: 'Barcha PS', icon: Gamepad2, g: 'linear-gradient(135deg,#0369a1,#0ea5e9)' },
+  { id: 'active', label: 'Faol qurilmalar', sub: 'Ishlab turgan', icon: Zap, g: 'linear-gradient(135deg,#15803d,#22c55e)' },
+  { id: 'tariffs', label: 'Tariflar', sub: 'Narxlar', icon: DollarSign, g: 'linear-gradient(135deg,#be185d,#ec4899)' },
+  { id: 'stats', label: 'Hisobot olish', sub: 'Daromad', icon: BarChart3, g: 'linear-gradient(135deg,#c2410c,#f59e0b)' },
+  { id: 'settings', label: 'Sozlamalar', sub: 'Tizim', icon: Settings, g: 'linear-gradient(135deg,#334155,#64748b)' },
+];
+
 export default function PlayStationClub() {
-  const [view, setView] = useState('devices');
+  const [view, setView] = useState('home');
   const [devices, setDevices] = useState([]);
   const [tariffs, setTariffs] = useState([]);
   const [sessions, setSessions] = useState([]);
@@ -51,14 +67,13 @@ export default function PlayStationClub() {
   useEffect(() => {
     const sd = storage.get('ps_devices');
     if (sd && Array.isArray(sd) && sd.length > 0) {
-      // Add tuyaDeviceId field if missing (migration)
-      setDevices(sd.map(d => ({ tuyaDeviceId: '', tvAutoControl: true, ...d })));
+      setDevices(sd.map(d => ({ tuyaDeviceId: '', tvAutoControl: true, maintenance: false, ...d })));
     } else {
-      const initial = Array.from({length: 6}, (_, i) => ({
-        id: `dev_${Date.now()}_${i}`, name: `PS ${i+1}`,
+      const initial = Array.from({ length: 6 }, (_, i) => ({
+        id: `dev_${Date.now()}_${i}`, name: `PS ${i + 1}`,
         running: false, startTime: null, tariffId: null,
         scheduledMinutes: null, alerted: false,
-        tuyaDeviceId: '', tvAutoControl: true,
+        tuyaDeviceId: '', tvAutoControl: true, maintenance: false,
       }));
       setDevices(initial);
       storage.set('ps_devices', initial);
@@ -79,10 +94,7 @@ export default function PlayStationClub() {
     const ss = storage.get('ps_sessions');
     if (ss && Array.isArray(ss)) setSessions(ss);
 
-    // Check notification permission
-    if ('Notification' in window) {
-      setNotifPermission(Notification.permission);
-    }
+    if ('Notification' in window) setNotifPermission(Notification.permission);
     setLoaded(true);
   }, []);
 
@@ -90,7 +102,6 @@ export default function PlayStationClub() {
   const saveTariffs = (n) => { setTariffs(n); storage.set('ps_tariffs', n); };
   const saveSessions = (n) => { setSessions(n); storage.set('ps_sessions', n); };
 
-  // Request notification permission
   const requestNotifications = async () => {
     if (!('Notification' in window)) {
       alert('Bu brauzer notifikatsiyalarni qo\'llab-quvvatlamaydi');
@@ -103,14 +114,13 @@ export default function PlayStationClub() {
   const showNotification = (title, body) => {
     if (notifPermission !== 'granted') return;
     try {
-      const n = new Notification(title, {
+      new Notification(title, {
         body,
         icon: '/icon-192.png',
         badge: '/icon-192.png',
         tag: 'ps-klub-alarm',
         requireInteraction: true,
       });
-      // Vibrate if supported
       if (navigator.vibrate) navigator.vibrate([400, 200, 400, 200, 400]);
     } catch (e) { console.error(e); }
   };
@@ -118,7 +128,7 @@ export default function PlayStationClub() {
   // Ticker - check every second for expired timers
   useEffect(() => {
     const interval = setInterval(() => {
-      forceUpdate(n => n+1);
+      forceUpdate(n => n + 1);
       devices.forEach(d => {
         if (d.running && d.scheduledMinutes && !d.alerted) {
           const elapsedMs = Date.now() - d.startTime;
@@ -131,34 +141,34 @@ export default function PlayStationClub() {
   }, [devices]);
 
   const triggerAlarm = async (device) => {
-    const updated = devices.map(d => d.id === device.id ? {...d, alerted: true} : d);
+    const updated = devices.map(d => d.id === device.id ? { ...d, alerted: true } : d);
     setDevices(updated);
     storage.set('ps_devices', updated);
 
-    // Desktop notification
     showNotification(
       `⏰ ${device.name} vaqti tugadi!`,
       `${device.name} sessiyasi yakunlandi. Iltimos, hisobni tayyorlang.`
     );
 
-    // Auto turn off TV if enabled
     if (device.tvAutoControl && device.tuyaDeviceId) {
       await tuyaControl(device.tuyaDeviceId, 'off');
     }
-
-    // Vibrate
-    try { if (navigator.vibrate) navigator.vibrate([400, 150, 400, 150, 400]); } catch(e) {}
+    try { if (navigator.vibrate) navigator.vibrate([400, 150, 400, 150, 400]); } catch (e) {}
   };
 
   const startDevice = async (deviceId, tariffId, minutes = null) => {
     const device = devices.find(d => d.id === deviceId);
+    if (!device) return;
+    if (device.maintenance) {
+      alert('Bu qurilma texnik xizmatda. Avval sozlamalardan holatini o\'zgartiring.');
+      return;
+    }
     const updated = devices.map(d => d.id === deviceId ? {
       ...d, running: true, startTime: Date.now(), tariffId,
       scheduledMinutes: minutes, alerted: false,
     } : d);
     saveDevices(updated);
 
-    // Auto turn on TV
     if (device.tvAutoControl && device.tuyaDeviceId) {
       await tuyaControl(device.tuyaDeviceId, 'on');
     }
@@ -188,15 +198,12 @@ export default function PlayStationClub() {
     } : d);
     saveDevices(updated);
 
-    // Auto turn off TV
     if (device.tvAutoControl && device.tuyaDeviceId) {
       await tuyaControl(device.tuyaDeviceId, 'off');
     }
-
     setShowCompleteSession(session);
   };
 
-  // Manual TV control
   const toggleTV = async (device, on) => {
     if (!device.tuyaDeviceId) {
       alert('Bu qurilma uchun TV (Smart Plug) sozlanmagan. Sozlamalarga o\'ting.');
@@ -209,7 +216,7 @@ export default function PlayStationClub() {
     saveDevices([...devices, {
       id: `dev_${Date.now()}`, name, running: false, startTime: null,
       tariffId: null, scheduledMinutes: null, alerted: false,
-      tuyaDeviceId: '', tvAutoControl: true,
+      tuyaDeviceId: '', tvAutoControl: true, maintenance: false,
     }]);
   };
 
@@ -219,7 +226,7 @@ export default function PlayStationClub() {
   };
 
   const updateDevice = (id, updates) => {
-    saveDevices(devices.map(d => d.id === id ? {...d, ...updates} : d));
+    saveDevices(devices.map(d => d.id === id ? { ...d, ...updates } : d));
   };
 
   const addTariff = (name, price) => {
@@ -227,7 +234,7 @@ export default function PlayStationClub() {
   };
 
   const updateTariff = (id, name, price) => {
-    saveTariffs(tariffs.map(t => t.id === id ? {...t, name, pricePerHour: price} : t));
+    saveTariffs(tariffs.map(t => t.id === id ? { ...t, name, pricePerHour: price } : t));
   };
 
   const removeTariff = (id) => {
@@ -239,13 +246,19 @@ export default function PlayStationClub() {
     saveTariffs(tariffs.filter(t => t.id !== id));
   };
 
+  // ==================== HELPERS ====================
   const formatMoney = (n) => new Intl.NumberFormat('uz-UZ').format(Math.round(n)) + ' so\'m';
+  const formatShort = (n) => {
+    const v = Math.round(n);
+    if (v >= 1000000) return (v / 1000000).toFixed(v % 1000000 === 0 ? 0 : 1) + ' mln';
+    return new Intl.NumberFormat('uz-UZ').format(v);
+  };
   const formatDuration = (ms) => {
     const t = Math.floor(ms / 1000);
     const h = Math.floor(t / 3600);
     const m = Math.floor((t % 3600) / 60);
     const s = t % 60;
-    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   };
   const getCurrentAmount = (d) => {
     if (!d.running) return 0;
@@ -261,44 +274,299 @@ export default function PlayStationClub() {
     if (!d.running || !d.scheduledMinutes) return 0;
     return Math.min(100, ((Date.now() - d.startTime) / (d.scheduledMinutes * 60000)) * 100);
   };
+  const deviceStatus = (d) => {
+    if (d.alerted) return { key: 'alert', text: 'Vaqt tugadi', color: '#f87171' };
+    if (d.running) return { key: 'busy', text: 'Band', color: '#4ade80' };
+    if (d.maintenance) return { key: 'maint', text: 'Texnik xizmat', color: '#fb7185' };
+    return { key: 'free', text: 'Bo\'sh', color: '#38bdf8' };
+  };
+
+  const todayStart = () => {
+    const n = new Date();
+    return new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime();
+  };
 
   const calcStats = () => {
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const weekStart = todayStart - 6 * 86400000;
+    const ts = todayStart();
+    const weekStart = ts - 6 * 86400000;
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-    const sum = (arr) => arr.reduce((a,b) => a + b.amount, 0);
+    const sum = (arr) => arr.reduce((a, b) => a + b.amount, 0);
+    const today = sessions.filter(s => s.endTime >= ts);
+    const yesterday = sessions.filter(s => s.endTime >= ts - 86400000 && s.endTime < ts);
+    const todayMs = today.reduce((a, b) => a + b.durationMs, 0);
     return {
-      today: { count: sessions.filter(s => s.endTime >= todayStart).length, total: sum(sessions.filter(s => s.endTime >= todayStart)) },
+      today: { count: today.length, total: sum(today), hours: todayMs / 3600000 },
+      yesterday: { count: yesterday.length, total: sum(yesterday) },
       week: { count: sessions.filter(s => s.endTime >= weekStart).length, total: sum(sessions.filter(s => s.endTime >= weekStart)) },
       month: { count: sessions.filter(s => s.endTime >= monthStart).length, total: sum(sessions.filter(s => s.endTime >= monthStart)) },
+      all: { count: sessions.length, total: sum(sessions), hours: sessions.reduce((a, b) => a + b.durationMs, 0) / 3600000 },
     };
   };
 
   const calcDeviceStats = (deviceId) => {
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const weekStart = todayStart - 6 * 86400000;
+    const ts = todayStart();
+    const weekStart = ts - 6 * 86400000;
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
     const ds = sessions.filter(s => s.deviceId === deviceId);
-    const sum = (arr) => arr.reduce((a,b) => a + b.amount, 0);
+    const sum = (arr) => arr.reduce((a, b) => a + b.amount, 0);
     return {
-      today: sum(ds.filter(s => s.endTime >= todayStart)),
+      today: sum(ds.filter(s => s.endTime >= ts)),
+      todayCount: ds.filter(s => s.endTime >= ts).length,
+      todayMs: ds.filter(s => s.endTime >= ts).reduce((a, b) => a + b.durationMs, 0),
       week: sum(ds.filter(s => s.endTime >= weekStart)),
       month: sum(ds.filter(s => s.endTime >= monthStart)),
     };
   };
 
+  // Weekly chart: Dushanba -> Yakshanba of the current week
+  const weeklyChart = () => {
+    const now = new Date();
+    const dow = (now.getDay() + 6) % 7; // 0 = Dushanba
+    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dow).getTime();
+    return WEEKDAYS.map((label, i) => {
+      const from = monday + i * 86400000;
+      const to = from + 86400000;
+      const total = sessions.filter(s => s.endTime >= from && s.endTime < to).reduce((a, b) => a + b.amount, 0);
+      return { label, short: WEEKDAYS_SHORT[i], total, isToday: i === dow };
+    });
+  };
+
   const stats = calcStats();
   const linkedDevices = devices.filter(d => d.tuyaDeviceId).length;
+  const runningDevices = devices.filter(d => d.running);
+  const chart = weeklyChart();
+  const chartMax = Math.max(1, ...chart.map(c => c.total));
+
+  // Bugungi faol qurilmalar: bugun ishlatilgan yoki hozir ishlab turgan qurilmalar
+  const todayActiveDevices = devices
+    .map(d => {
+      const ds = calcDeviceStats(d.id);
+      const live = d.running ? getCurrentAmount(d) : 0;
+      const liveMs = d.running ? Date.now() - d.startTime : 0;
+      return {
+        device: d,
+        count: ds.todayCount + (d.running ? 1 : 0),
+        total: ds.today + live,
+        ms: ds.todayMs + liveMs,
+      };
+    })
+    .filter(x => x.count > 0 || x.total > 0)
+    .sort((a, b) => b.total - a.total);
+
+  const dayDiff = stats.yesterday.total > 0
+    ? Math.round(((stats.today.total - stats.yesterday.total) / stats.yesterday.total) * 100)
+    : null;
+
+  const clock = new Date();
+  const timeStr = clock.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+  const dateStr = clock.toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
   if (!loaded) {
     return (
-      <div style={{minHeight:'100vh', background:'#06080f', display:'flex', alignItems:'center', justifyContent:'center', color:'#a78bfa', fontFamily:'system-ui'}}>
+      <div style={{ minHeight: '100vh', background: '#050b1c', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#60a5fa', fontFamily: 'system-ui' }}>
         Yuklanmoqda...
       </div>
     );
   }
+
+  // ==================== SHARED PIECES ====================
+  const DeviceScreen = ({ status }) => (
+    <div className="screen" data-st={status.key}>
+      <div className="screen-glow" />
+      <Gamepad2 size={26} color="rgba(255,255,255,0.85)" strokeWidth={1.6} />
+      <div className="screen-stand" />
+    </div>
+  );
+
+  const DeviceCard = ({ device, idx }) => {
+    const st = deviceStatus(device);
+    const tariff = tariffs.find(t => t.id === device.tariffId);
+    const remaining = getRemainingTime(device);
+    const elapsedMs = device.running ? Date.now() - device.startTime : 0;
+    const progress = getProgress(device);
+    const hasTV = !!device.tuyaDeviceId;
+
+    return (
+      <div className={`dev st-${st.key} fade-up fade-up-${Math.min(idx + 1, 6)}`}>
+        <div className="dev-top">
+          <DeviceScreen status={st} />
+          <div className="dev-info">
+            <div className="dev-name">{device.name}</div>
+            <div className="dev-status" style={{ color: st.color }}>
+              <span className="dot" style={{ background: st.color, boxShadow: `0 0 10px ${st.color}` }} />
+              {st.text}
+            </div>
+            <div className="dev-meta">
+              {tariff ? `Tarif: ${tariff.name}` : 'Tarif: —'}
+            </div>
+            <div className="dev-meta">
+              {hasTV ? <><Wifi size={11} /> TV ulangan</> : <><WifiOff size={11} /> TV yo'q</>}
+            </div>
+          </div>
+        </div>
+
+        {device.running && (
+          <div className="dev-live">
+            {device.scheduledMinutes ? (
+              <div className="bar"><div className="bar-fill" style={{ width: `${progress}%`, background: device.alerted ? 'linear-gradient(90deg,#ef4444,#dc2626)' : 'linear-gradient(90deg,#22c55e,#16a34a)' }} /></div>
+            ) : null}
+            <div className="dev-live-row">
+              <span className="mono timer">{formatDuration(elapsedMs)}</span>
+              <span className="amt">{formatShort(getCurrentAmount(device))}</span>
+            </div>
+            {remaining !== null && !device.alerted && (
+              <div className="dev-remain mono">Qolgan: {formatDuration(Math.max(0, remaining))}</div>
+            )}
+          </div>
+        )}
+
+        <div className="dev-btns">
+          {device.running ? (
+            <>
+              <button className="btn btn-danger" onClick={() => stopDevice(device.id)}><Square size={14} fill="white" /> To'xtatish</button>
+              <button className="btn btn-ghost" onClick={() => setEditingDevice(device)}><Settings size={14} /> Ma'lumot</button>
+            </>
+          ) : (
+            <>
+              <button
+                className="btn btn-success"
+                disabled={device.maintenance}
+                onClick={() => { if (tariffs.length === 0) { alert('Avval tarif qo\'shing!'); return; } setShowTimerSetup(device.id); }}
+              >
+                <Play size={14} fill="white" /> Boshlash
+              </button>
+              <button className="btn btn-ghost" onClick={() => setEditingDevice(device)}><Settings size={14} /> Ma'lumot</button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const ActiveCard = ({ device }) => {
+    const tariff = tariffs.find(t => t.id === device.tariffId);
+    const remaining = getRemainingTime(device);
+    const elapsedMs = Date.now() - device.startTime;
+    const progress = getProgress(device);
+    return (
+      <div className={`act ${device.alerted ? 'act-alert' : ''}`}>
+        <div className="act-head">
+          <div className="act-name">
+            <span className="dot live" />
+            {device.name}
+          </div>
+          {tariff && <span className="chip">{tariff.name} · {formatShort(tariff.pricePerHour)}/soat</span>}
+        </div>
+        <div className="act-body">
+          <div className="act-cell">
+            <div className="cell-label">{device.alerted ? '⏰ VAQT TUGADI' : 'O\'tgan vaqt'}</div>
+            <div className="mono cell-val" style={{ color: device.alerted ? '#fca5a5' : '#6ee7b7' }}>{formatDuration(elapsedMs)}</div>
+          </div>
+          <div className="act-cell">
+            <div className="cell-label">Qolgan vaqt</div>
+            <div className="mono cell-val" style={{ color: '#93c5fd' }}>
+              {remaining !== null ? formatDuration(Math.max(0, remaining)) : '∞'}
+            </div>
+          </div>
+          <div className="act-cell">
+            <div className="cell-label">Joriy summa</div>
+            <div className="cell-val" style={{ color: '#fff' }}>{formatShort(getCurrentAmount(device))}</div>
+          </div>
+        </div>
+        {device.scheduledMinutes ? (
+          <div className="bar"><div className="bar-fill" style={{ width: `${progress}%`, background: device.alerted ? 'linear-gradient(90deg,#ef4444,#dc2626)' : 'linear-gradient(90deg,#22c55e,#4ade80)' }} /></div>
+        ) : null}
+        <div className="act-btns">
+          <button className="btn btn-danger" onClick={() => stopDevice(device.id)}><Square size={14} fill="white" /> To'xtatish va hisoblash</button>
+          {device.tuyaDeviceId && (
+            <button className="btn btn-ghost" onClick={() => toggleTV(device, false)} title="TV ni o'chirish"><Power size={14} /> TV</button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const ActivePanel = ({ compact }) => (
+    <section className="panel">
+      <div className="panel-head">
+        <div className="panel-title"><Zap size={16} color="#4ade80" /> Faol qurilmalar</div>
+        <span className="badge badge-green">{runningDevices.length} ta ishlamoqda</span>
+      </div>
+      {runningDevices.length === 0 ? (
+        <div className="empty">
+          <PauseCircle size={26} color="#3b4a6b" />
+          <div>Hozir ishlab turgan qurilma yo'q</div>
+          <button className="btn btn-primary sm" onClick={() => setView('devices')}><Play size={13} fill="white" /> Seans boshlash</button>
+        </div>
+      ) : (
+        <div className={compact ? 'act-grid compact' : 'act-grid'}>
+          {runningDevices.map(d => <ActiveCard key={d.id} device={d} />)}
+        </div>
+      )}
+    </section>
+  );
+
+  const TodayActivePanel = () => (
+    <section className="panel">
+      <div className="panel-head">
+        <div className="panel-title"><Activity size={16} color="#60a5fa" /> Bugungi faol qurilmalar</div>
+        <button className="link" onClick={() => setView('stats')}>Barchasi →</button>
+      </div>
+      {todayActiveDevices.length === 0 ? (
+        <div className="empty sm"><Calendar size={22} color="#3b4a6b" /><div>Bugun hali seans bo'lmadi</div></div>
+      ) : (
+        <div className="tad-list">
+          {todayActiveDevices.map(({ device, count, total, ms }) => {
+            const st = deviceStatus(device);
+            return (
+              <div key={device.id} className="tad">
+                <div className="tad-ico" style={{ borderColor: `${st.color}55`, background: `${st.color}18` }}>
+                  <Gamepad2 size={16} color={st.color} />
+                </div>
+                <div className="tad-mid">
+                  <div className="tad-name">
+                    {device.name}
+                    {device.running && <span className="dot live" style={{ marginLeft: 8 }} />}
+                  </div>
+                  <div className="tad-sub">{count} seans · {formatDuration(ms)}</div>
+                </div>
+                <div className="tad-amt">{formatShort(total)}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+
+  const WeeklyPanel = () => (
+    <section className="panel">
+      <div className="panel-head">
+        <div className="panel-title"><BarChart3 size={16} color="#a78bfa" /> Haftalik statistika</div>
+        <button className="link" onClick={() => setView('stats')}>Barchasi →</button>
+      </div>
+      <div className="chart">
+        {chart.map((c, i) => (
+          <div key={i} className="chart-col" title={`${c.label}: ${formatMoney(c.total)}`}>
+            <div className="chart-val">{c.total > 0 ? formatShort(c.total) : ''}</div>
+            <div className="chart-track">
+              <div
+                className={`chart-bar ${c.isToday ? 'today' : ''}`}
+                style={{ height: `${Math.max(4, (c.total / chartMax) * 100)}%` }}
+              />
+            </div>
+            <div className={`chart-lbl ${c.isToday ? 'today' : ''}`}>{c.short}</div>
+          </div>
+        ))}
+      </div>
+      <div className="chart-foot">
+        <span>Haftalik jami</span>
+        <strong>{formatMoney(stats.week.total)}</strong>
+      </div>
+    </section>
+  );
 
   return (
     <div className="ps-app">
@@ -306,534 +574,629 @@ export default function PlayStationClub() {
         @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { margin: 0; padding: 0; }
-        body { background: #06080f; font-family: 'Sora', system-ui, sans-serif; }
+        body { background: #050b1c; font-family: 'Sora', system-ui, sans-serif; }
         .ps-app {
-          min-height: 100vh;
+          min-height: 100vh; color: #e5edff;
           background:
-            radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,0.25), transparent 60%),
-            radial-gradient(ellipse 60% 40% at 80% 80%, rgba(168,85,247,0.18), transparent 70%),
-            radial-gradient(ellipse 60% 40% at 20% 60%, rgba(34,197,94,0.08), transparent 60%),
-            #06080f;
-          color: #e4e4e7; padding-bottom: 100px; position: relative; overflow-x: hidden;
+            radial-gradient(ellipse 70% 45% at 50% -8%, rgba(37,99,235,0.30), transparent 62%),
+            radial-gradient(ellipse 55% 40% at 88% 78%, rgba(168,85,247,0.16), transparent 70%),
+            radial-gradient(ellipse 55% 40% at 8% 62%, rgba(6,182,212,0.10), transparent 65%),
+            #050b1c;
+          padding-bottom: 128px;
         }
-        .ps-app::before {
-          content: ''; position: fixed; inset: 0;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.4 0 0 0 0 0.3 0 0 0 0 0.7 0 0 0 0.025 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
-          pointer-events: none; opacity: 0.6; z-index: 1;
+        .mono { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+
+        /* ---------- TOP BAR ---------- */
+        .topbar {
+          position: sticky; top: 0; z-index: 40;
+          display: flex; align-items: center; gap: 14px;
+          padding: 12px 18px;
+          background: rgba(5,11,28,0.82);
+          backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+          border-bottom: 1px solid rgba(96,165,250,0.14);
         }
-        .mono { font-family: 'JetBrains Mono', monospace; }
-        .glass {
-          background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
-          backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-          border: 1px solid rgba(255,255,255,0.08);
-          box-shadow: 0 1px 0 0 rgba(255,255,255,0.05) inset, 0 20px 40px -20px rgba(0,0,0,0.4);
+        .brand { display: flex; align-items: center; gap: 11px; }
+        .brand-ico {
+          width: 40px; height: 40px; border-radius: 12px;
+          background: linear-gradient(135deg,#1d4ed8,#0ea5e9);
+          display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 8px 22px -6px rgba(29,78,216,0.7);
         }
-        .glass-strong {
-          background: linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(168,85,247,0.04) 100%);
-          backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-          border: 1px solid rgba(168,85,247,0.18);
-          box-shadow: 0 1px 0 0 rgba(255,255,255,0.06) inset, 0 0 60px -10px rgba(99,102,241,0.15);
+        .brand-name { font-size: 18px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+        .brand-sub { font-size: 11px; color: #7f93b8; margin-top: 3px; font-weight: 500; }
+        .topbar-sp { flex: 1; }
+        .clock { text-align: right; line-height: 1.15; }
+        .clock-t { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+        .clock-d { font-size: 11px; color: #7f93b8; font-weight: 500; }
+        .who {
+          display: flex; align-items: center; gap: 8px;
+          background: rgba(96,165,250,0.10); border: 1px solid rgba(96,165,250,0.22);
+          padding: 6px 12px; border-radius: 100px;
         }
-        .running {
-          background: linear-gradient(135deg, rgba(34,197,94,0.12) 0%, rgba(16,185,129,0.04) 100%);
-          border: 1px solid rgba(34,197,94,0.4);
-          box-shadow: 0 0 50px -8px rgba(34,197,94,0.3), 0 0 0 1px rgba(34,197,94,0.15);
+        .who-name { font-size: 12px; font-weight: 700; line-height: 1.1; }
+        .who-st { font-size: 10px; color: #4ade80; display: flex; align-items: center; gap: 4px; }
+
+        /* ---------- PAGE ---------- */
+        .page { padding: 18px; max-width: 1500px; margin: 0 auto; }
+        .page-head { margin-bottom: 18px; }
+        .page-title { font-size: 24px; font-weight: 800; letter-spacing: -0.035em; display: flex; align-items: center; gap: 10px; }
+        .page-sub { font-size: 13px; color: #7f93b8; margin-top: 5px; font-weight: 500; }
+
+        .layout { display: grid; grid-template-columns: minmax(0,1fr) 360px; gap: 16px; align-items: start; }
+        .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+        @media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } }
+
+        /* ---------- KPI ---------- */
+        .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 16px; }
+        @media (max-width: 1100px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 520px) { .kpis { grid-template-columns: 1fr 1fr; gap: 10px; } }
+        .kpi {
+          border-radius: 18px; padding: 16px; position: relative; overflow: hidden;
+          border: 1px solid rgba(255,255,255,0.10);
+          box-shadow: 0 18px 36px -22px rgba(0,0,0,0.9), 0 1px 0 0 rgba(255,255,255,0.08) inset;
         }
-        .alerted {
-          background: linear-gradient(135deg, rgba(239,68,68,0.18) 0%, rgba(239,68,68,0.06) 100%);
-          border: 1px solid rgba(239,68,68,0.6);
-          animation: pulse-alert 0.8s ease-in-out infinite;
+        .kpi-ico {
+          width: 38px; height: 38px; border-radius: 12px; background: rgba(255,255,255,0.16);
+          display: flex; align-items: center; justify-content: center; margin-bottom: 12px;
         }
+        .kpi-lbl { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.82); }
+        .kpi-val { font-size: 26px; font-weight: 800; letter-spacing: -0.035em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+        @media (max-width: 520px) { .kpi-val { font-size: 20px; } }
+        .kpi-foot { font-size: 11px; margin-top: 8px; font-weight: 600; display: flex; align-items: center; gap: 5px; color: rgba(255,255,255,0.72); }
+
+        /* ---------- PANEL ---------- */
+        .panel {
+          border-radius: 20px; padding: 16px;
+          background: linear-gradient(160deg, rgba(18,32,68,0.72) 0%, rgba(9,17,40,0.72) 100%);
+          border: 1px solid rgba(96,165,250,0.16);
+          box-shadow: 0 24px 48px -28px rgba(0,0,0,0.95), 0 1px 0 0 rgba(255,255,255,0.05) inset;
+        }
+        .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+        .panel-title { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; }
+        .badge { font-size: 11px; font-weight: 700; padding: 5px 11px; border-radius: 100px; }
+        .badge-green { color: #86efac; background: rgba(34,197,94,0.14); border: 1px solid rgba(34,197,94,0.32); }
+        .badge-blue { color: #93c5fd; background: rgba(59,130,246,0.14); border: 1px solid rgba(59,130,246,0.32); }
+        .link { background: none; border: none; color: #60a5fa; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; padding: 0; }
+        .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: #64769b; }
+
+        .empty {
+          display: flex; flex-direction: column; align-items: center; gap: 10px;
+          padding: 26px 14px; color: #64769b; font-size: 13px; font-weight: 500;
+          border: 1px dashed rgba(96,165,250,0.18); border-radius: 16px; background: rgba(0,0,0,0.18);
+        }
+        .empty.sm { padding: 18px 12px; font-size: 12px; }
+
+        /* ---------- DEVICE GRID ---------- */
+        .dev-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+        .dev {
+          border-radius: 18px; padding: 14px; position: relative;
+          background: linear-gradient(160deg, rgba(12,24,54,0.9), rgba(7,14,34,0.9));
+          border: 1px solid rgba(96,165,250,0.22);
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .dev:hover { transform: translateY(-2px); }
+        .dev.st-free { border-color: rgba(56,189,248,0.45); box-shadow: 0 0 26px -12px rgba(56,189,248,0.7); }
+        .dev.st-busy { border-color: rgba(74,222,128,0.5); box-shadow: 0 0 30px -12px rgba(74,222,128,0.75); }
+        .dev.st-maint { border-color: rgba(251,113,133,0.5); box-shadow: 0 0 26px -12px rgba(251,113,133,0.6); }
+        .dev.st-alert { border-color: rgba(248,113,113,0.75); animation: pulse-alert 0.9s ease-in-out infinite; }
         @keyframes pulse-alert {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5), 0 0 30px -5px rgba(239,68,68,0.4); }
-          50% { box-shadow: 0 0 0 8px rgba(239,68,68,0), 0 0 60px -5px rgba(239,68,68,0.7); }
+          0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.45), 0 0 28px -6px rgba(239,68,68,0.5); }
+          50% { box-shadow: 0 0 0 7px rgba(239,68,68,0), 0 0 56px -6px rgba(239,68,68,0.75); }
         }
-        @keyframes fade-up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
-        @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.3); } }
-        .fade-up { animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards; }
-        .fade-up-1 { animation-delay: 0.05s; } .fade-up-2 { animation-delay: 0.1s; }
-        .fade-up-3 { animation-delay: 0.15s; } .fade-up-4 { animation-delay: 0.2s; }
-        .fade-up-5 { animation-delay: 0.25s; } .fade-up-6 { animation-delay: 0.3s; }
-        .shimmer-text {
-          background: linear-gradient(90deg, #a78bfa 0%, #f0abfc 50%, #a78bfa 100%);
-          background-size: 200% 100%;
-          -webkit-background-clip: text; background-clip: text; color: transparent;
-          animation: shimmer 3s linear infinite;
+        .dev-top { display: flex; gap: 12px; }
+        .screen {
+          width: 84px; height: 62px; border-radius: 9px; flex-shrink: 0; position: relative;
+          background: linear-gradient(160deg,#1e40af,#0891b2);
+          display: flex; align-items: center; justify-content: center;
+          border: 2px solid rgba(255,255,255,0.16);
+          box-shadow: 0 10px 22px -10px rgba(14,165,233,0.85);
         }
+        .screen[data-st="busy"] { background: linear-gradient(160deg,#15803d,#0d9488); box-shadow: 0 10px 22px -10px rgba(34,197,94,0.85); }
+        .screen[data-st="maint"] { background: linear-gradient(160deg,#9f1239,#a21caf); box-shadow: 0 10px 22px -10px rgba(236,72,153,0.8); }
+        .screen[data-st="alert"] { background: linear-gradient(160deg,#b91c1c,#7f1d1d); }
+        .screen-glow { position: absolute; inset: 0; border-radius: 7px; background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.28), transparent 65%); }
+        .screen-stand { position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); width: 26px; height: 6px; border-radius: 0 0 5px 5px; background: rgba(255,255,255,0.18); }
+        .dev-info { min-width: 0; flex: 1; }
+        .dev-name { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; }
+        .dev-status { font-size: 12px; font-weight: 700; margin-top: 3px; display: flex; align-items: center; gap: 6px; }
+        .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+        .dot.live { background: #4ade80; box-shadow: 0 0 10px #4ade80; animation: pulse-dot 1.5s ease-in-out infinite; }
+        @keyframes pulse-dot { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: 0.55; transform: scale(1.3);} }
+        .dev-meta { font-size: 11px; color: #7f93b8; margin-top: 4px; display: flex; align-items: center; gap: 5px; font-weight: 500; }
+        .dev-live { margin-top: 12px; background: rgba(0,0,0,0.36); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 10px 12px; }
+        .dev-live-row { display: flex; align-items: baseline; justify-content: space-between; }
+        .timer { font-size: 19px; font-weight: 700; color: #6ee7b7; letter-spacing: -0.02em; }
+        .amt { font-size: 14px; font-weight: 800; color: #fff; }
+        .dev-remain { font-size: 11px; color: #93c5fd; margin-top: 4px; font-weight: 600; }
+        .bar { height: 4px; background: rgba(255,255,255,0.08); border-radius: 100px; overflow: hidden; margin-bottom: 8px; }
+        .bar-fill { height: 100%; transition: width 0.4s; }
+        .dev-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+
+        /* ---------- ACTIVE ---------- */
+        .act-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+        .act-grid.compact { grid-template-columns: 1fr; }
+        .act {
+          border-radius: 16px; padding: 14px;
+          background: linear-gradient(160deg, rgba(20,83,45,0.35), rgba(6,20,40,0.7));
+          border: 1px solid rgba(74,222,128,0.35);
+          box-shadow: 0 0 34px -18px rgba(34,197,94,0.8);
+        }
+        .act-alert { background: linear-gradient(160deg, rgba(127,29,29,0.4), rgba(20,8,20,0.7)); border-color: rgba(248,113,113,0.6); }
+        .act-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+        .act-name { font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 8px; letter-spacing: -0.02em; }
+        .chip { font-size: 11px; font-weight: 700; color: #c4b5fd; background: rgba(168,85,247,0.14); border: 1px solid rgba(168,85,247,0.3); padding: 4px 9px; border-radius: 100px; }
+        .act-body { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 10px; }
+        .act-cell { background: rgba(0,0,0,0.32); border: 1px solid rgba(255,255,255,0.06); border-radius: 11px; padding: 9px 10px; }
+        .cell-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: #7f93b8; font-weight: 700; }
+        .cell-val { font-size: 15px; font-weight: 800; margin-top: 3px; letter-spacing: -0.02em; }
+        .act-btns { display: flex; gap: 8px; }
+        .act-btns .btn:first-child { flex: 1; }
+
+        /* ---------- TODAY ACTIVE LIST ---------- */
+        .tad-list { display: flex; flex-direction: column; gap: 8px; }
+        .tad { display: flex; align-items: center; gap: 11px; padding: 9px 10px; border-radius: 13px; background: rgba(0,0,0,0.24); border: 1px solid rgba(255,255,255,0.05); }
+        .tad-ico { width: 36px; height: 36px; border-radius: 11px; border: 1px solid; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .tad-mid { flex: 1; min-width: 0; }
+        .tad-name { font-size: 13px; font-weight: 700; display: flex; align-items: center; }
+        .tad-sub { font-size: 11px; color: #7f93b8; margin-top: 2px; font-weight: 500; }
+        .tad-amt { font-size: 13px; font-weight: 800; color: #86efac; white-space: nowrap; }
+
+        /* ---------- CHART ---------- */
+        .chart { display: grid; grid-template-columns: repeat(7,1fr); gap: 6px; height: 150px; align-items: end; }
+        .chart-col { display: flex; flex-direction: column; align-items: center; height: 100%; gap: 4px; }
+        .chart-val { font-size: 9px; color: #7f93b8; font-weight: 700; height: 12px; }
+        .chart-track { flex: 1; width: 100%; display: flex; align-items: flex-end; }
+        .chart-bar { width: 100%; border-radius: 6px 6px 3px 3px; background: linear-gradient(180deg,#3b82f6,#1d4ed8); transition: height 0.4s; }
+        .chart-bar.today { background: linear-gradient(180deg,#22d3ee,#0ea5e9); box-shadow: 0 0 16px -4px rgba(34,211,238,0.8); }
+        .chart-lbl { font-size: 10px; color: #64769b; font-weight: 600; }
+        .chart-lbl.today { color: #22d3ee; font-weight: 800; }
+        .chart-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.07); font-size: 12px; color: #7f93b8; font-weight: 600; }
+        .chart-foot strong { color: #fff; font-size: 14px; }
+
+        /* ---------- BUTTONS ---------- */
         .btn {
-          border: none; font-family: inherit; font-weight: 600; cursor: pointer;
-          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-          display: flex; align-items: center; justify-content: center; gap: 8px;
-          letter-spacing: -0.01em;
+          border: none; font-family: inherit; font-weight: 700; cursor: pointer;
+          transition: transform 0.15s, filter 0.2s;
+          display: flex; align-items: center; justify-content: center; gap: 7px;
+          padding: 11px 12px; border-radius: 12px; font-size: 13px; letter-spacing: -0.01em;
         }
         .btn:active { transform: scale(0.97); }
-        .btn-primary {
-          background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-          color: white;
-          box-shadow: 0 8px 20px -6px rgba(99,102,241,0.5);
-        }
-        .btn-success { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; box-shadow: 0 8px 20px -6px rgba(34,197,94,0.5); }
-        .btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; box-shadow: 0 8px 20px -6px rgba(239,68,68,0.5); }
-        .btn-ghost {
-          background: rgba(255,255,255,0.04);
-          border: 1px solid rgba(255,255,255,0.1);
-          color: #e4e4e7; backdrop-filter: blur(10px);
-        }
-        .btn-ghost:hover { background: rgba(255,255,255,0.08); border-color: rgba(168,85,247,0.4); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn.sm { padding: 9px 14px; font-size: 12px; }
+        .btn.wide { width: 100%; }
+        .btn-primary { background: linear-gradient(135deg,#2563eb,#0ea5e9); color: #fff; box-shadow: 0 10px 22px -10px rgba(37,99,235,0.85); }
+        .btn-success { background: linear-gradient(135deg,#16a34a,#22c55e); color: #fff; box-shadow: 0 10px 22px -10px rgba(34,197,94,0.85); }
+        .btn-danger { background: linear-gradient(135deg,#dc2626,#ef4444); color: #fff; box-shadow: 0 10px 22px -10px rgba(239,68,68,0.85); }
+        .btn-warn { background: linear-gradient(135deg,#ea580c,#f59e0b); color: #fff; }
+        .btn-ghost { background: rgba(96,165,250,0.10); border: 1px solid rgba(96,165,250,0.28); color: #bfdbfe; }
+        .btn-ghost:hover { background: rgba(96,165,250,0.18); }
+        .icon-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09); color: #8ea3c7; cursor: pointer; padding: 9px; border-radius: 11px; display: flex; align-items: center; justify-content: center; }
+        .icon-btn:hover { color: #fff; border-color: rgba(96,165,250,0.4); }
+
         input, select {
-          background: rgba(0,0,0,0.4);
-          border: 1px solid rgba(255,255,255,0.1);
-          color: #e4e4e7; font-family: inherit; outline: none;
-          transition: all 0.2s;
+          background: rgba(0,0,0,0.42); border: 1px solid rgba(255,255,255,0.10);
+          color: #e5edff; font-family: inherit; outline: none; transition: all 0.2s;
         }
-        input:focus, select:focus { border-color: #a855f7; box-shadow: 0 0 0 3px rgba(168,85,247,0.15); }
-        select option { background: #0f1322; color: #e4e4e7; }
-        .nav-btn {
-          flex: 1; background: transparent; border: none;
-          color: #6b7280; padding: 10px 8px;
-          display: flex; flex-direction: column; align-items: center; gap: 4px;
-          cursor: pointer; font-size: 11px; font-weight: 600; font-family: inherit;
-          transition: color 0.2s; position: relative;
-        }
-        .nav-btn.active { color: #c4b5fd; }
-        .nav-btn.active::before {
-          content: ''; position: absolute; top: 0; left: 50%;
-          transform: translateX(-50%); width: 30px; height: 3px;
-          border-radius: 0 0 6px 6px;
-          background: linear-gradient(90deg, #6366f1, #a855f7);
-        }
-        .device-card { position: relative; z-index: 2; border-radius: 24px; padding: 20px; transition: all 0.3s; }
-        .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 10px #22c55e; animation: pulse-dot 1.5s ease-in-out infinite; }
-        .stat-number { font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
-        .bottom-nav {
-          position: fixed; bottom: 0; left: 0; right: 0;
-          background: rgba(6,8,15,0.85);
+        input:focus, select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.16); }
+        select option { background: #0b1630; color: #e5edff; }
+
+        /* ---------- BOTTOM MENU ---------- */
+        .bottom-menu {
+          position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+          padding: 10px 12px max(12px, env(safe-area-inset-bottom));
+          background: rgba(5,11,28,0.9);
           backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-          border-top: 1px solid rgba(255,255,255,0.06);
-          display: flex;
-          padding: 8px 8px max(16px, env(safe-area-inset-bottom));
-          z-index: 50;
+          border-top: 1px solid rgba(96,165,250,0.16);
         }
-        .modal-backdrop {
-          position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-          backdrop-filter: blur(8px); display: flex; align-items: flex-end; justify-content: center;
-          z-index: 100; animation: fade-in 0.2s ease;
+        .bm-row { display: grid; grid-template-columns: repeat(6,1fr); gap: 10px; max-width: 1500px; margin: 0 auto; }
+        @media (max-width: 860px) { .bm-row { grid-template-columns: repeat(6,1fr); gap: 6px; } }
+        .bm {
+          border: 1px solid rgba(255,255,255,0.10); border-radius: 14px;
+          padding: 11px 12px; cursor: pointer; font-family: inherit; color: #fff;
+          display: flex; align-items: center; gap: 10px; text-align: left;
+          opacity: 0.62; transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
         }
+        .bm:hover { opacity: 0.9; }
+        .bm.on { opacity: 1; transform: translateY(-3px); box-shadow: 0 14px 26px -14px rgba(0,0,0,0.95), 0 0 0 1px rgba(255,255,255,0.22) inset; }
+        .bm-txt { min-width: 0; }
+        .bm-lbl { font-size: 13px; font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .bm-sub { font-size: 10px; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        @media (max-width: 860px) {
+          .bm { flex-direction: column; gap: 4px; padding: 9px 4px; align-items: center; text-align: center; border-radius: 12px; }
+          .bm-sub { display: none; }
+          .bm-lbl { font-size: 9.5px; }
+        }
+
+        /* ---------- MODAL ---------- */
+        .modal-backdrop { position: fixed; inset: 0; background: rgba(2,6,18,0.78); backdrop-filter: blur(8px); display: flex; align-items: flex-end; justify-content: center; z-index: 120; animation: fade-in 0.2s ease; }
+        @media (min-width: 700px) { .modal-backdrop { align-items: center; } }
         @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        @keyframes slide-up { from { transform: translateY(60px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .modal-content {
-          width: 100%; max-width: 500px;
-          background: linear-gradient(180deg, #1a1330 0%, #0a0d1c 100%);
-          border-top: 1px solid rgba(168,85,247,0.25);
-          border-radius: 28px 28px 0 0;
-          padding: 24px 20px max(24px, env(safe-area-inset-bottom));
-          animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-          box-shadow: 0 -20px 60px -10px rgba(99,102,241,0.2);
-          max-height: 85vh; overflow-y: auto;
+          width: 100%; max-width: 520px;
+          background: linear-gradient(180deg,#132449 0%,#070f26 100%);
+          border: 1px solid rgba(96,165,250,0.25);
+          border-radius: 24px 24px 0 0;
+          padding: 22px 20px max(22px, env(safe-area-inset-bottom));
+          animation: slide-up 0.28s cubic-bezier(0.16,1,0.3,1);
+          max-height: 88vh; overflow-y: auto;
         }
-        .header {
-          padding: 20px 16px 16px;
-          position: sticky; top: 0; z-index: 20;
-          background: linear-gradient(180deg, rgba(6,8,15,0.95) 0%, rgba(6,8,15,0.7) 80%, transparent 100%);
-          backdrop-filter: blur(12px);
-        }
-        .logo-icon {
-          width: 48px; height: 48px; border-radius: 14px;
-          background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-          display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 8px 24px -4px rgba(99,102,241,0.5);
-          position: relative;
-        }
-        .pill {
-          font-size: 11px; font-weight: 600;
-          padding: 6px 10px; border-radius: 100px;
-          display: flex; align-items: center; gap: 5px;
-        }
-        .pill-ready { color: #86efac; background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.25); }
-        .pill-locked { color: #fcd34d; background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.3); }
-        .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: #71717a; padding: 0 4px; }
-        .tv-btn {
-          background: rgba(99,102,241,0.1);
-          border: 1px solid rgba(99,102,241,0.3);
-          color: #c4b5fd;
-          padding: 8px 12px;
-          border-radius: 10px;
-          font-size: 12px;
-          font-weight: 600;
-          cursor: pointer;
-          display: flex; align-items: center; gap: 6px;
-          transition: all 0.2s;
-          font-family: inherit;
-        }
-        .tv-btn:hover { background: rgba(99,102,241,0.2); }
-        .tv-btn.on { background: rgba(34,197,94,0.15); border-color: rgba(34,197,94,0.4); color: #86efac; }
+        @media (min-width: 700px) { .modal-content { border-radius: 22px; } }
+        .flabel { display: block; font-size: 12px; color: #93a7c9; margin-bottom: 7px; font-weight: 600; }
+        .finput { width: 100%; padding: 12px 13px; border-radius: 12px; font-size: 15px; }
+
+        @keyframes fade-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-up { animation: fade-up 0.45s cubic-bezier(0.16,1,0.3,1) backwards; }
+        .fade-up-1 { animation-delay: .04s } .fade-up-2 { animation-delay: .08s }
+        .fade-up-3 { animation-delay: .12s } .fade-up-4 { animation-delay: .16s }
+        .fade-up-5 { animation-delay: .2s }  .fade-up-6 { animation-delay: .24s }
       `}</style>
 
-      <div className="header">
-        <div style={{display:'flex', alignItems:'center', gap:'14px'}}>
-          <div className="logo-icon fade-up"><Gamepad2 size={26} color="white" strokeWidth={2.2}/></div>
-          <div style={{flex: 1}} className="fade-up fade-up-1">
-            <div style={{fontSize:'22px', fontWeight:700, letterSpacing:'-0.03em', lineHeight: 1}}>PS Klub</div>
-            <div style={{fontSize:'12px', color:'#71717a', marginTop:'4px', fontWeight: 500}}>
-              {view === 'devices' && 'Qurilmalar boshqaruvi'}
-              {view === 'tariffs' && 'Tariflar ro\'yxati'}
-              {view === 'stats' && 'Daromad statistikasi'}
-              {view === 'settings' && 'Sozlamalar'}
+      {/* ============ TOP BAR ============ */}
+      <div className="topbar">
+        <div className="brand">
+          <div className="brand-ico"><Gamepad2 size={22} color="#fff" strokeWidth={2.2} /></div>
+          <div>
+            <div className="brand-name">PS Klub</div>
+            <div className="brand-sub">O'yinlar. Do'stlar. Zo'r kayfiyat!</div>
+          </div>
+        </div>
+        <div className="topbar-sp" />
+        <div className="clock">
+          <div className="clock-t mono">{timeStr}</div>
+          <div className="clock-d">{dateStr}</div>
+        </div>
+        {notifPermission === 'granted' ? (
+          <div className="who">
+            <Bell size={13} color="#4ade80" />
+            <div>
+              <div className="who-name">Admin</div>
+              <div className="who-st"><span className="dot live" /> Onlayn</div>
             </div>
           </div>
-          {notifPermission === 'granted' ? (
-            <div className="pill pill-ready fade-up fade-up-2">
-              <Bell size={12}/> Xabar
-            </div>
-          ) : (
-            <button onClick={requestNotifications} className="pill pill-locked fade-up fade-up-2" style={{border:'1px solid rgba(251,191,36,0.3)', cursor:'pointer', fontFamily:'inherit'}}>
-              <Bell size={12}/> Xabar yoqish
-            </button>
-          )}
-        </div>
+        ) : (
+          <button onClick={requestNotifications} className="who" style={{ cursor: 'pointer', fontFamily: 'inherit', color: '#fcd34d', borderColor: 'rgba(251,191,36,0.35)', background: 'rgba(251,191,36,0.12)' }}>
+            <Bell size={13} /> <span style={{ fontSize: 12, fontWeight: 700 }}>Xabarni yoqish</span>
+          </button>
+        )}
       </div>
 
-      <div style={{padding: '0 16px', position: 'relative', zIndex: 2}}>
-        {view === 'devices' && (
+      <div className="page">
+        {/* ============ HOME ============ */}
+        {view === 'home' && (
           <>
-            <div className="glass-strong fade-up fade-up-1" style={{borderRadius:'20px', padding:'20px', marginBottom:'20px', position:'relative', overflow:'hidden'}}>
-              <div style={{position:'absolute', top:0, right:0, width:'120px', height:'120px', background:'radial-gradient(circle, rgba(168,85,247,0.3), transparent 70%)', pointerEvents:'none'}}/>
-              <div style={{display:'flex', alignItems:'center', gap:'8px', marginBottom: '4px'}}>
-                <Activity size={14} color="#a78bfa"/>
-                <div className="label" style={{padding: 0}}>Bugungi daromad</div>
+            <div className="page-head">
+              <div className="page-title">PS Klub — Boshqaruv paneli</div>
+              <div className="page-sub">Klub faoliyatini qulay boshqaring va barcha jarayonlarni nazorat qiling</div>
+            </div>
+
+            <div className="kpis">
+              <div className="kpi fade-up fade-up-1" style={{ background: 'linear-gradient(135deg,#6d28d9,#8b5cf6)' }}>
+                <div className="kpi-ico"><Users size={19} color="#fff" /></div>
+                <div className="kpi-lbl">Bugungi seanslar</div>
+                <div className="kpi-val">{stats.today.count}</div>
+                <div className="kpi-foot"><Clock size={11} /> Kechagi: {stats.yesterday.count}</div>
               </div>
-              <div className="stat-number shimmer-text" style={{fontSize:'34px', fontWeight:800, marginTop:'2px', lineHeight: 1.1}}>
-                {formatMoney(stats.today.total)}
+              <div className="kpi fade-up fade-up-2" style={{ background: 'linear-gradient(135deg,#15803d,#22c55e)' }}>
+                <div className="kpi-ico"><Zap size={19} color="#fff" /></div>
+                <div className="kpi-lbl">Faol seanslar</div>
+                <div className="kpi-val">{runningDevices.length}</div>
+                <div className="kpi-foot">{runningDevices.length > 0 ? 'Hozirda o\'yin ketmoqda' : 'Hammasi bo\'sh'}</div>
               </div>
-              <div style={{marginTop:'14px', paddingTop:'14px', borderTop:'1px solid rgba(255,255,255,0.06)', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-                <div style={{display:'flex', alignItems:'center', gap: '6px'}}>
-                  <Zap size={14} color="#86efac"/>
-                  <span style={{fontSize:'13px', color:'#a1a1aa', fontWeight: 500}}>
-                    {devices.filter(d => d.running).length} faol · {linkedDevices}/{devices.length} TV bog'langan
-                  </span>
-                </div>
-                <div style={{fontSize:'12px', color:'#71717a', fontWeight: 600}}>
-                  {stats.today.count} sessiya
+              <div className="kpi fade-up fade-up-3" style={{ background: 'linear-gradient(135deg,#1d4ed8,#0ea5e9)' }}>
+                <div className="kpi-ico"><Timer size={19} color="#fff" /></div>
+                <div className="kpi-lbl">Bugungi o'yin soatlari</div>
+                <div className="kpi-val">{stats.today.hours.toFixed(1)}</div>
+                <div className="kpi-foot"><Gamepad2 size={11} /> {devices.length} qurilma · {linkedDevices} TV</div>
+              </div>
+              <div className="kpi fade-up fade-up-4" style={{ background: 'linear-gradient(135deg,#c2410c,#f59e0b)' }}>
+                <div className="kpi-ico"><Wallet size={19} color="#fff" /></div>
+                <div className="kpi-lbl">Bugungi tushum</div>
+                <div className="kpi-val">{formatShort(stats.today.total)}</div>
+                <div className="kpi-foot">
+                  {dayDiff !== null ? <><TrendingUp size={11} /> {dayDiff > 0 ? '+' : ''}{dayDiff}% kechagiga nisbatan</> : 'so\'m'}
                 </div>
               </div>
             </div>
 
-            <div style={{display:'grid', gridTemplateColumns:'1fr', gap:'12px'}}>
-              {devices.map((device, idx) => {
-                const tariff = tariffs.find(t => t.id === device.tariffId);
-                const remaining = getRemainingTime(device);
-                const isAlerted = device.alerted;
-                const elapsedMs = device.running ? Date.now() - device.startTime : 0;
-                const progress = getProgress(device);
-                const cls = isAlerted ? 'alerted' : (device.running ? 'running' : 'glass');
-                const delayClass = `fade-up-${Math.min(idx + 2, 6)}`;
-                const hasTV = !!device.tuyaDeviceId;
-
-                return (
-                  <div key={device.id} className={`device-card ${cls} fade-up ${delayClass}`}>
-                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'14px'}}>
-                      <div>
-                        <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
-                          {device.running ? <div className="live-dot"/> : <div style={{width:'8px', height:'8px', borderRadius:'50%', background: '#3f3f46'}}/>}
-                          <div style={{fontSize:'18px', fontWeight:700, letterSpacing: '-0.02em'}}>{device.name}</div>
-                          {hasTV ? (
-                            <div title="TV bog'langan" style={{display:'flex', alignItems:'center', gap:'3px', fontSize:'10px', color:'#86efac', background:'rgba(34,197,94,0.1)', padding:'2px 6px', borderRadius:'6px'}}>
-                              <Wifi size={10}/> TV
-                            </div>
-                          ) : (
-                            <div title="TV bog'lanmagan" style={{display:'flex', alignItems:'center', gap:'3px', fontSize:'10px', color:'#71717a', background:'rgba(255,255,255,0.03)', padding:'2px 6px', borderRadius:'6px'}}>
-                              <WifiOff size={10}/>
-                            </div>
-                          )}
-                        </div>
-                        {device.running && tariff && (
-                          <div style={{fontSize:'12px', color:'#a1a1aa', marginTop:'6px', display:'flex', alignItems:'center', gap:'6px'}}>
-                            <span style={{padding:'2px 8px', background:'rgba(168,85,247,0.12)', border:'1px solid rgba(168,85,247,0.25)', borderRadius:'6px', color:'#c4b5fd', fontWeight: 600}}>{tariff.name}</span>
-                            <span>{formatMoney(tariff.pricePerHour)}/soat</span>
-                          </div>
-                        )}
-                        {!device.running && <div style={{fontSize:'12px', color:'#52525b', marginTop:'6px', fontWeight: 500}}>Bo'sh holat</div>}
-                      </div>
-                      <div style={{display:'flex', gap:'6px'}}>
-                        {!device.running && (
-                          <>
-                            <button onClick={() => setEditingDevice(device)} style={{background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', color:'#71717a', cursor:'pointer', padding:'8px', borderRadius: '10px'}}>
-                              <Settings size={14}/>
-                            </button>
-                            <button onClick={() => removeDevice(device.id)} style={{background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', color:'#71717a', cursor:'pointer', padding:'8px', borderRadius: '10px'}}>
-                              <Trash2 size={14}/>
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {device.running && (
-                      <>
-                        <div style={{background:'rgba(0,0,0,0.4)', borderRadius:'16px', padding:'18px 16px', marginBottom:'14px', textAlign:'center', border: '1px solid rgba(255,255,255,0.04)', position:'relative', overflow:'hidden'}}>
-                          {device.scheduledMinutes && (
-                            <div style={{position:'absolute', top:0, left:0, right:0, height:'3px', background:'rgba(255,255,255,0.06)'}}>
-                              <div style={{height:'100%', width:`${progress}%`, background: isAlerted ? 'linear-gradient(90deg, #ef4444, #dc2626)' : 'linear-gradient(90deg, #6366f1, #a855f7)', transition:'width 0.3s'}}/>
-                            </div>
-                          )}
-                          <div style={{fontSize:'10px', color:'#71717a', textTransform:'uppercase', letterSpacing:'0.12em', marginBottom:'6px', fontWeight: 700}}>
-                            {isAlerted ? '⏰ VAQT TUGADI!' : 'O\'tgan vaqt'}
-                          </div>
-                          <div className="mono stat-number" style={{fontSize:'32px', fontWeight:700, color: isAlerted ? '#fca5a5' : '#a7f3d0', letterSpacing:'-0.03em'}}>
-                            {formatDuration(elapsedMs)}
-                          </div>
-                          {remaining !== null && !isAlerted && (
-                            <div style={{fontSize:'12px', color:'#c4b5fd', marginTop:'4px', fontWeight: 600, fontFamily: 'JetBrains Mono, monospace'}}>
-                              Qolgan: {formatDuration(Math.max(0, remaining))}
-                            </div>
-                          )}
-                          <div style={{marginTop:'14px', paddingTop:'14px', borderTop:'1px dashed rgba(255,255,255,0.08)'}}>
-                            <div style={{fontSize:'11px', color:'#71717a', fontWeight: 600}}>JORIY SUMMA</div>
-                            <div className="stat-number" style={{fontSize:'24px', fontWeight:800, color:'#fff', marginTop:'2px'}}>
-                              {formatMoney(getCurrentAmount(device))}
-                            </div>
-                          </div>
-                        </div>
-                        <div style={{display:'flex', gap:'8px'}}>
-                          <button onClick={() => stopDevice(device.id)} className="btn btn-danger" style={{flex:1, padding:'14px', borderRadius:'14px', fontSize:'15px'}}>
-                            <Square size={16} fill="white"/> Yopish
-                          </button>
-                          {hasTV && (
-                            <button onClick={() => toggleTV(device, false)} className="tv-btn" title="TV ni qo'lda o'chirish" style={{padding:'0 14px', borderRadius:'14px'}}>
-                              <Power size={16}/>
-                            </button>
-                          )}
-                        </div>
-                      </>
-                    )}
-
-                    {!device.running && (
-                      <>
-                        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom: hasTV ? '8px' : 0}}>
-                          <button onClick={() => { if (tariffs.length === 0) { alert('Avval tarif qo\'shing!'); return; } startDevice(device.id, tariffs[0].id); }} className="btn btn-success" style={{padding:'13px', borderRadius:'13px', fontSize:'14px'}}>
-                            <Play size={15} fill="white"/> Ochish
-                          </button>
-                          <button onClick={() => { if (tariffs.length === 0) { alert('Avval tarif qo\'shing!'); return; } setShowTimerSetup(device.id); }} className="btn btn-primary" style={{padding:'13px', borderRadius:'13px', fontSize:'14px'}}>
-                            <Clock size={15}/> Vaqt qo'y
-                          </button>
-                        </div>
-                        {hasTV && (
-                          <div style={{display:'flex', gap:'6px'}}>
-                            <button onClick={() => toggleTV(device, true)} className="tv-btn" style={{flex:1, justifyContent:'center'}}>
-                              <Tv size={13}/> TV ON
-                            </button>
-                            <button onClick={() => toggleTV(device, false)} className="tv-btn" style={{flex:1, justifyContent:'center'}}>
-                              <Power size={13}/> TV OFF
-                            </button>
-                          </div>
-                        )}
-                      </>
-                    )}
+            <div className="layout">
+              <div className="col">
+                <ActivePanel />
+                <section className="panel">
+                  <div className="panel-head">
+                    <div className="panel-title"><LayoutGrid size={16} color="#38bdf8" /> PS zallar holati</div>
+                    <span className="badge badge-blue">{devices.filter(d => !d.running && !d.maintenance).length} bo'sh</span>
                   </div>
-                );
-              })}
-            </div>
+                  <div className="dev-grid">
+                    {devices.map((d, i) => <DeviceCard key={d.id} device={d} idx={i} />)}
+                  </div>
+                </section>
+              </div>
 
-            <button onClick={() => setShowAddDevice(true)} className="btn btn-ghost fade-up fade-up-6" style={{width:'100%', padding:'14px', borderRadius:'14px', marginTop:'14px', fontSize:'14px'}}>
-              <Plus size={16}/> Yangi qurilma qo'shish
-            </button>
+              <div className="col">
+                <TodayActivePanel />
+                <WeeklyPanel />
+              </div>
+            </div>
           </>
         )}
 
-        {view === 'tariffs' && (
-          <div>
-            <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
-              {tariffs.map((t, idx) => (
-                <div key={t.id} className={`glass fade-up fade-up-${Math.min(idx + 1, 6)}`} style={{borderRadius:'18px', padding:'18px', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-                  <div>
-                    <div style={{fontSize:'17px', fontWeight:700, letterSpacing: '-0.02em'}}>{t.name}</div>
-                    <div style={{fontSize:'14px', color:'#c4b5fd', fontWeight:600, marginTop:'4px'}}>
-                      {formatMoney(t.pricePerHour)}<span style={{color:'#71717a', fontWeight: 500}}> / soat</span>
-                    </div>
-                  </div>
-                  <div style={{display:'flex', gap:'8px'}}>
-                    <button onClick={() => setEditingTariff(t)} className="btn btn-ghost" style={{padding:'10px', borderRadius:'12px'}}><Edit2 size={15}/></button>
-                    <button onClick={() => removeTariff(t.id)} style={{background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.25)', color:'#fca5a5', padding:'10px', borderRadius:'12px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center'}}>
-                      <Trash2 size={15}/>
-                    </button>
-                  </div>
-                </div>
-              ))}
+        {/* ============ DEVICES ============ */}
+        {view === 'devices' && (
+          <>
+            <div className="page-head">
+              <div className="page-title"><Gamepad2 size={22} color="#38bdf8" /> Qurilmalar</div>
+              <div className="page-sub">Barcha PS qurilmalari va ularning holati</div>
             </div>
-            <button onClick={() => setShowAddTariff(true)} className="btn btn-primary" style={{width:'100%', padding:'14px', borderRadius:'14px', marginTop:'14px', fontSize:'14px'}}>
-              <Plus size={16}/> Yangi tarif qo'shish
-            </button>
-          </div>
+            <section className="panel">
+              <div className="panel-head">
+                <div className="panel-title">Barcha qurilmalar ({devices.length})</div>
+                <button className="btn btn-primary sm" onClick={() => setShowAddDevice(true)}><Plus size={14} /> Qurilma qo'shish</button>
+              </div>
+              <div className="dev-grid">
+                {devices.map((d, i) => <DeviceCard key={d.id} device={d} idx={i} />)}
+              </div>
+            </section>
+          </>
         )}
 
-        {view === 'stats' && (
-          <div>
-            <div style={{display:'grid', gridTemplateColumns:'1fr', gap:'12px', marginBottom:'24px'}}>
-              {[
-                {label:'Bugun', icon: Calendar, data: stats.today, color:'#22c55e', accent: 'rgba(34,197,94,0.15)'},
-                {label:'Haftalik', icon: TrendingUp, data: stats.week, color:'#a855f7', accent: 'rgba(168,85,247,0.15)'},
-                {label:'Oylik', icon: BarChart3, data: stats.month, color:'#6366f1', accent: 'rgba(99,102,241,0.15)'},
-              ].map((p, i) => {
-                const Icon = p.icon;
-                return (
-                  <div key={i} className={`glass fade-up fade-up-${i+1}`} style={{borderRadius:'20px', padding:'20px', position:'relative', overflow:'hidden'}}>
-                    <div style={{position:'absolute', top:'-30px', right:'-30px', width:'120px', height:'120px', background:`radial-gradient(circle, ${p.accent}, transparent 70%)`}}/>
-                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px'}}>
-                      <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
-                        <div style={{width:'32px', height:'32px', borderRadius:'10px', background: p.accent, border: `1px solid ${p.color}40`, display:'flex', alignItems:'center', justifyContent:'center'}}>
-                          <Icon size={16} color={p.color}/>
-                        </div>
-                        <div style={{fontSize:'14px', color:'#d4d4d8', fontWeight:600}}>{p.label}</div>
-                      </div>
-                      <div style={{fontSize:'11px', color:'#71717a', background:'rgba(255,255,255,0.04)', padding:'4px 10px', borderRadius:'100px', fontWeight: 600}}>
-                        {p.data.count} sessiya
+        {/* ============ ACTIVE DEVICES ============ */}
+        {view === 'active' && (
+          <>
+            <div className="page-head">
+              <div className="page-title"><Zap size={22} color="#4ade80" /> Faol qurilmalar</div>
+              <div className="page-sub">Hozir ishlab turgan seanslar, taymer va joriy summa</div>
+            </div>
+            <div className="kpis" style={{ gridTemplateColumns: 'repeat(3,1fr)' }}>
+              <div className="kpi" style={{ background: 'linear-gradient(135deg,#15803d,#22c55e)' }}>
+                <div className="kpi-lbl">Ishlab turibdi</div>
+                <div className="kpi-val">{runningDevices.length} / {devices.length}</div>
+              </div>
+              <div className="kpi" style={{ background: 'linear-gradient(135deg,#1d4ed8,#0ea5e9)' }}>
+                <div className="kpi-lbl">Joriy summa (jami)</div>
+                <div className="kpi-val">{formatShort(runningDevices.reduce((a, d) => a + getCurrentAmount(d), 0))}</div>
+              </div>
+              <div className="kpi" style={{ background: 'linear-gradient(135deg,#be185d,#ec4899)' }}>
+                <div className="kpi-lbl">Vaqti tugagan</div>
+                <div className="kpi-val">{devices.filter(d => d.alerted).length}</div>
+              </div>
+            </div>
+            <ActivePanel />
+          </>
+        )}
+
+        {/* ============ TARIFFS ============ */}
+        {view === 'tariffs' && (
+          <>
+            <div className="page-head">
+              <div className="page-title"><DollarSign size={22} color="#f472b6" /> Tariflar</div>
+              <div className="page-sub">Soatlik narxlarni boshqaring</div>
+            </div>
+            <section className="panel">
+              <div className="panel-head">
+                <div className="panel-title">Tariflar ro'yxati ({tariffs.length})</div>
+                <button className="btn btn-primary sm" onClick={() => setShowAddTariff(true)}><Plus size={14} /> Yangi tarif</button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: '10px' }}>
+                {tariffs.map((t, idx) => (
+                  <div key={t.id} className={`dev fade-up fade-up-${Math.min(idx + 1, 6)}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderColor: 'rgba(236,72,153,0.3)' }}>
+                    <div>
+                      <div className="dev-name">{t.name}</div>
+                      <div style={{ fontSize: 13, color: '#f9a8d4', fontWeight: 700, marginTop: 4 }}>
+                        {formatMoney(t.pricePerHour)}<span style={{ color: '#7f93b8', fontWeight: 500 }}> / soat</span>
                       </div>
                     </div>
-                    <div className="stat-number" style={{fontSize:'30px', fontWeight:800, color: p.color, letterSpacing:'-0.03em', lineHeight: 1.1}}>
-                      {formatMoney(p.data.total)}
+                    <div style={{ display: 'flex', gap: 7 }}>
+                      <button className="icon-btn" onClick={() => setEditingTariff(t)}><Edit2 size={14} /></button>
+                      <button className="icon-btn" style={{ color: '#fca5a5', borderColor: 'rgba(239,68,68,0.3)' }} onClick={() => removeTariff(t.id)}><Trash2 size={14} /></button>
                     </div>
                   </div>
-                );
-              })}
+                ))}
+              </div>
+            </section>
+          </>
+        )}
+
+        {/* ============ STATS ============ */}
+        {view === 'stats' && (
+          <>
+            <div className="page-head">
+              <div className="page-title"><BarChart3 size={22} color="#fbbf24" /> Hisobot</div>
+              <div className="page-sub">Daromad va qurilmalar bo'yicha to'liq ma'lumot</div>
+            </div>
+            <div className="kpis">
+              <div className="kpi" style={{ background: 'linear-gradient(135deg,#15803d,#22c55e)' }}>
+                <div className="kpi-lbl">Bugun</div>
+                <div className="kpi-val">{formatShort(stats.today.total)}</div>
+                <div className="kpi-foot">{stats.today.count} seans</div>
+              </div>
+              <div className="kpi" style={{ background: 'linear-gradient(135deg,#6d28d9,#a855f7)' }}>
+                <div className="kpi-lbl">Haftalik</div>
+                <div className="kpi-val">{formatShort(stats.week.total)}</div>
+                <div className="kpi-foot">{stats.week.count} seans</div>
+              </div>
+              <div className="kpi" style={{ background: 'linear-gradient(135deg,#1d4ed8,#0ea5e9)' }}>
+                <div className="kpi-lbl">Oylik</div>
+                <div className="kpi-val">{formatShort(stats.month.total)}</div>
+                <div className="kpi-foot">{stats.month.count} seans</div>
+              </div>
+              <div className="kpi" style={{ background: 'linear-gradient(135deg,#c2410c,#f59e0b)' }}>
+                <div className="kpi-lbl">Umumiy</div>
+                <div className="kpi-val">{formatShort(stats.all.total)}</div>
+                <div className="kpi-foot">{stats.all.hours.toFixed(0)} soat o'yin</div>
+              </div>
             </div>
 
-            <div className="label" style={{marginBottom:'12px'}}>QURILMALAR BO'YICHA</div>
-            <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
-              {devices.map((d) => {
-                const dStats = calcDeviceStats(d.id);
-                return (
-                  <div key={d.id} className="glass" style={{borderRadius:'16px', padding:'16px'}}>
-                    <div style={{fontSize:'15px', fontWeight:700, marginBottom:'12px', letterSpacing: '-0.02em'}}>{d.name}</div>
-                    <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'10px'}}>
-                      {[
-                        {label: 'Kunlik', val: dStats.today, color: '#22c55e'},
-                        {label: 'Haftalik', val: dStats.week, color: '#a855f7'},
-                        {label: 'Oylik', val: dStats.month, color: '#6366f1'},
-                      ].map((s, i) => (
-                        <div key={i} style={{padding:'10px', background:'rgba(0,0,0,0.3)', borderRadius:'10px', border:'1px solid rgba(255,255,255,0.04)'}}>
-                          <div style={{fontSize:'10px', color:'#71717a', textTransform:'uppercase', letterSpacing:'0.08em', fontWeight: 700}}>{s.label}</div>
-                          <div className="stat-number" style={{fontSize:'13px', fontWeight:700, color: s.color, marginTop:'4px'}}>
-                            {formatMoney(s.val)}
+            <div className="layout">
+              <div className="col">
+                <section className="panel">
+                  <div className="panel-head"><div className="panel-title">Qurilmalar bo'yicha</div></div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+                    {devices.map(d => {
+                      const ds = calcDeviceStats(d.id);
+                      return (
+                        <div key={d.id} style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 14, padding: 13 }}>
+                          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>{d.name}</div>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
+                            {[
+                              { label: 'Kunlik', val: ds.today, color: '#4ade80' },
+                              { label: 'Haftalik', val: ds.week, color: '#c084fc' },
+                              { label: 'Oylik', val: ds.month, color: '#60a5fa' },
+                            ].map((s, i) => (
+                              <div key={i} style={{ padding: 9, background: 'rgba(0,0,0,0.3)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.04)' }}>
+                                <div className="cell-label">{s.label}</div>
+                                <div style={{ fontSize: 13, fontWeight: 800, color: s.color, marginTop: 3 }}>{formatShort(s.val)}</div>
+                              </div>
+                            ))}
                           </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+
+                {sessions.length > 0 && (
+                  <section className="panel">
+                    <div className="panel-head"><div className="panel-title">So'nggi seanslar</div></div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                      {sessions.slice(0, 15).map(s => (
+                        <div key={s.id} className="tad">
+                          <div className="tad-ico" style={{ borderColor: 'rgba(96,165,250,0.3)', background: 'rgba(96,165,250,0.12)' }}>
+                            <CheckCircle2 size={15} color="#60a5fa" />
+                          </div>
+                          <div className="tad-mid">
+                            <div className="tad-name">{s.deviceName} <span style={{ color: '#7f93b8', fontWeight: 500, marginLeft: 6, fontSize: 11 }}>{s.tariffName}</span></div>
+                            <div className="tad-sub">
+                              {new Date(s.endTime).toLocaleString('uz-UZ', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} · {formatDuration(s.durationMs)}
+                            </div>
+                          </div>
+                          <div className="tad-amt">{formatShort(s.amount)}</div>
                         </div>
                       ))}
                     </div>
-                  </div>
-                );
-              })}
+                  </section>
+                )}
+              </div>
+              <div className="col">
+                <WeeklyPanel />
+                <TodayActivePanel />
+              </div>
             </div>
+          </>
+        )}
 
-            {sessions.length > 0 && (
-              <>
-                <div className="label" style={{marginTop:'28px', marginBottom:'12px'}}>SO'NGGI SESSIYALAR</div>
-                <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>
-                  {sessions.slice(0, 10).map(s => (
-                    <div key={s.id} className="glass" style={{borderRadius:'14px', padding:'14px 16px', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-                      <div>
-                        <div style={{fontSize:'14px', fontWeight:700}}>{s.deviceName}</div>
-                        <div style={{fontSize:'11px', color:'#71717a', marginTop:'3px', fontWeight: 500}}>
-                          {new Date(s.endTime).toLocaleString('uz-UZ', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}{' · '}{formatDuration(s.durationMs)}
+        {/* ============ SETTINGS ============ */}
+        {view === 'settings' && (
+          <>
+            <div className="page-head">
+              <div className="page-title"><Settings size={22} color="#94a3b8" /> Sozlamalar</div>
+              <div className="page-sub">Xabarnomalar va TV (Tuya Smart Plug) bog'lanishi</div>
+            </div>
+            <div className="layout">
+              <div className="col">
+                <section className="panel">
+                  <div className="panel-head"><div className="panel-title"><Tv size={16} color="#38bdf8" /> Qurilmalar va TV bog'lanishi</div></div>
+                  <div style={{ fontSize: 12, color: '#7f93b8', marginBottom: 12, lineHeight: 1.55 }}>
+                    Har bir PS qurilmasi uchun Tuya Smart Plug Device ID kiriting. Seans boshlanganda TV avtomatik yoqiladi, tugaganda o'chadi.
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(230px,1fr))', gap: 10 }}>
+                    {devices.map(d => (
+                      <div key={d.id} style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: 13 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
+                          <div style={{ fontSize: 14, fontWeight: 700 }}>{d.name}</div>
+                          {d.maintenance ? (
+                            <span className="badge" style={{ color: '#fda4af', background: 'rgba(244,63,94,0.12)', border: '1px solid rgba(244,63,94,0.3)' }}>Texnik xizmat</span>
+                          ) : d.tuyaDeviceId ? (
+                            <span className="badge badge-green">TV ulangan</span>
+                          ) : (
+                            <span className="badge" style={{ color: '#fcd34d', background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.3)' }}>Sozlanmagan</span>
+                          )}
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 7 }}>
+                          <button className="btn btn-ghost sm" onClick={() => setEditingDevice(d)}><Settings size={13} /> Sozlash</button>
+                          <button className="icon-btn" style={{ color: '#fca5a5', borderColor: 'rgba(239,68,68,0.25)' }} onClick={() => removeDevice(d.id)}><Trash2 size={14} /></button>
                         </div>
                       </div>
-                      <div className="stat-number" style={{fontSize:'15px', fontWeight:800, color:'#86efac'}}>
-                        {formatMoney(s.amount)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {view === 'settings' && (
-          <div>
-            <div className="glass fade-up" style={{borderRadius:'18px', padding:'18px', marginBottom:'16px'}}>
-              <div style={{display:'flex', alignItems:'center', gap:'10px', marginBottom:'12px'}}>
-                <Bell size={18} color="#a78bfa"/>
-                <div style={{fontSize:'15px', fontWeight:700}}>Kompyuter xabarnomalari</div>
-              </div>
-              <div style={{fontSize:'13px', color:'#a1a1aa', marginBottom:'12px', lineHeight: 1.5}}>
-                Vaqt tugaganda Windows notifikatsiyasi chiqadi (ilova yopiq bo'lsa ham).
-              </div>
-              {notifPermission === 'granted' ? (
-                <div style={{padding:'10px', background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.25)', borderRadius:'10px', color:'#86efac', fontSize:'13px', fontWeight:600, textAlign:'center'}}>
-                  ✓ Xabarnomalar yoqilgan
-                </div>
-              ) : (
-                <button onClick={requestNotifications} className="btn btn-primary" style={{width:'100%', padding:'12px', borderRadius:'12px', fontSize:'14px'}}>
-                  <Bell size={15}/> Xabarnomalarni yoqish
-                </button>
-              )}
-            </div>
-
-            <div className="label" style={{marginBottom:'12px'}}>QURILMALAR VA TV BOG'LANISHI</div>
-            <div style={{fontSize:'12px', color:'#71717a', marginBottom:'14px', padding:'0 4px', lineHeight: 1.5}}>
-              Har bir PS qurilmasi uchun Tuya Smart Plug Device ID kiriting. Vaqt boshlanganda TV avtomatik yoqiladi, tugaganda o'chadi.
-            </div>
-            <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
-              {devices.map((d) => (
-                <div key={d.id} className="glass" style={{borderRadius:'14px', padding:'14px'}}>
-                  <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px'}}>
-                    <div style={{fontSize:'14px', fontWeight:700}}>{d.name}</div>
-                    {d.tuyaDeviceId ? (
-                      <div style={{fontSize:'10px', color:'#86efac', background:'rgba(34,197,94,0.1)', padding:'3px 8px', borderRadius:'6px', fontWeight:600}}>✓ Ulangan</div>
-                    ) : (
-                      <div style={{fontSize:'10px', color:'#fcd34d', background:'rgba(251,191,36,0.1)', padding:'3px 8px', borderRadius:'6px', fontWeight:600}}>Sozlanmagan</div>
-                    )}
+                    ))}
                   </div>
-                  <button onClick={() => setEditingDevice(d)} className="btn btn-ghost" style={{width:'100%', padding:'10px', borderRadius:'10px', fontSize:'13px'}}>
-                    <Settings size={13}/> Sozlash
-                  </button>
-                </div>
-              ))}
+                  <button className="btn btn-primary wide" style={{ marginTop: 12 }} onClick={() => setShowAddDevice(true)}><Plus size={15} /> Yangi qurilma qo'shish</button>
+                </section>
+              </div>
+              <div className="col">
+                <section className="panel">
+                  <div className="panel-head"><div className="panel-title"><Bell size={16} color="#a78bfa" /> Xabarnomalar</div></div>
+                  <div style={{ fontSize: 13, color: '#93a7c9', marginBottom: 12, lineHeight: 1.55 }}>
+                    Vaqt tugaganda tizim xabarnomasi chiqadi (ilova yopiq bo'lsa ham).
+                  </div>
+                  {notifPermission === 'granted' ? (
+                    <div style={{ padding: 11, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.28)', borderRadius: 12, color: '#86efac', fontSize: 13, fontWeight: 700, textAlign: 'center' }}>
+                      ✓ Xabarnomalar yoqilgan
+                    </div>
+                  ) : (
+                    <button onClick={requestNotifications} className="btn btn-primary wide"><Bell size={15} /> Xabarnomalarni yoqish</button>
+                  )}
+                </section>
+                <section className="panel">
+                  <div className="panel-head"><div className="panel-title"><Activity size={16} color="#4ade80" /> Tizim holati</div></div>
+                  <div className="tad-list">
+                    <div className="tad"><div className="tad-mid"><div className="tad-name">Qurilmalar</div></div><div className="tad-amt" style={{ color: '#93c5fd' }}>{devices.length} ta</div></div>
+                    <div className="tad"><div className="tad-mid"><div className="tad-name">TV bog'langan</div></div><div className="tad-amt" style={{ color: '#93c5fd' }}>{linkedDevices} ta</div></div>
+                    <div className="tad"><div className="tad-mid"><div className="tad-name">Texnik xizmatda</div></div><div className="tad-amt" style={{ color: '#fda4af' }}>{devices.filter(d => d.maintenance).length} ta</div></div>
+                    <div className="tad"><div className="tad-mid"><div className="tad-name">Jami seanslar</div></div><div className="tad-amt">{sessions.length} ta</div></div>
+                  </div>
+                </section>
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
 
-      <div className="bottom-nav">
-        <button onClick={() => setView('devices')} className={`nav-btn ${view==='devices'?'active':''}`}>
-          <Gamepad2 size={22} strokeWidth={view==='devices' ? 2.5 : 2}/>
-          <span>Qurilmalar</span>
-        </button>
-        <button onClick={() => setView('tariffs')} className={`nav-btn ${view==='tariffs'?'active':''}`}>
-          <DollarSign size={22} strokeWidth={view==='tariffs' ? 2.5 : 2}/>
-          <span>Tariflar</span>
-        </button>
-        <button onClick={() => setView('stats')} className={`nav-btn ${view==='stats'?'active':''}`}>
-          <BarChart3 size={22} strokeWidth={view==='stats' ? 2.5 : 2}/>
-          <span>Statistika</span>
-        </button>
-        <button onClick={() => setView('settings')} className={`nav-btn ${view==='settings'?'active':''}`}>
-          <Settings size={22} strokeWidth={view==='settings' ? 2.5 : 2}/>
-          <span>Sozlamalar</span>
-        </button>
+      {/* ============ BOTTOM MENU ============ */}
+      <div className="bottom-menu">
+        <div className="bm-row">
+          {MENU.map(m => {
+            const Icon = m.icon;
+            const on = view === m.id;
+            return (
+              <button key={m.id} className={`bm ${on ? 'on' : ''}`} style={{ background: m.g }} onClick={() => setView(m.id)}>
+                <Icon size={18} color="#fff" strokeWidth={on ? 2.4 : 2} />
+                <div className="bm-txt">
+                  <div className="bm-lbl">{m.label}</div>
+                  <div className="bm-sub">{m.id === 'active' ? `${runningDevices.length} ta faol` : m.sub}</div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {showAddDevice && <Modal onClose={() => setShowAddDevice(false)} title="Yangi qurilma"><AddDeviceForm onAdd={(name) => { addDevice(name); setShowAddDevice(false); }}/></Modal>}
-      {showAddTariff && <Modal onClose={() => setShowAddTariff(false)} title="Yangi tarif"><TariffForm onSave={(name, price) => { addTariff(name, price); setShowAddTariff(false); }}/></Modal>}
-      {editingTariff && <Modal onClose={() => setEditingTariff(null)} title="Tarifni tahrirlash"><TariffForm initial={editingTariff} onSave={(name, price) => { updateTariff(editingTariff.id, name, price); setEditingTariff(null); }}/></Modal>}
-      {showTimerSetup && <Modal onClose={() => setShowTimerSetup(null)} title="Vaqt belgilash"><TimerSetupForm tariffs={tariffs} onStart={(tariffId, minutes) => { startDevice(showTimerSetup, tariffId, minutes); setShowTimerSetup(null); }}/></Modal>}
-      {editingDevice && <Modal onClose={() => setEditingDevice(null)} title={`${editingDevice.name} sozlamalari`}><DeviceSettingsForm device={editingDevice} onSave={(updates) => { updateDevice(editingDevice.id, updates); setEditingDevice(null); }}/></Modal>}
+      {/* ============ MODALS ============ */}
+      {showAddDevice && <Modal onClose={() => setShowAddDevice(false)} title="Yangi qurilma"><AddDeviceForm onAdd={(name) => { addDevice(name); setShowAddDevice(false); }} /></Modal>}
+      {showAddTariff && <Modal onClose={() => setShowAddTariff(false)} title="Yangi tarif"><TariffForm onSave={(name, price) => { addTariff(name, price); setShowAddTariff(false); }} /></Modal>}
+      {editingTariff && <Modal onClose={() => setEditingTariff(null)} title="Tarifni tahrirlash"><TariffForm initial={editingTariff} onSave={(name, price) => { updateTariff(editingTariff.id, name, price); setEditingTariff(null); }} /></Modal>}
+      {showTimerSetup && <Modal onClose={() => setShowTimerSetup(null)} title="Seansni boshlash"><TimerSetupForm tariffs={tariffs} onStart={(tariffId, minutes) => { startDevice(showTimerSetup, tariffId, minutes); setShowTimerSetup(null); }} /></Modal>}
+      {editingDevice && (
+        <Modal onClose={() => setEditingDevice(null)} title={`${editingDevice.name} sozlamalari`}>
+          <DeviceSettingsForm device={editingDevice} onSave={(updates) => { updateDevice(editingDevice.id, updates); setEditingDevice(null); }} />
+        </Modal>
+      )}
 
       {showCompleteSession && (
-        <Modal onClose={() => setShowCompleteSession(null)} title="✓ Sessiya yakunlandi">
-          <div style={{textAlign:'center', padding:'10px 0'}}>
-            <div style={{fontSize:'14px', color:'#a1a1aa', marginBottom:'4px', fontWeight: 500}}>
+        <Modal onClose={() => setShowCompleteSession(null)} title="✓ Seans yakunlandi">
+          <div style={{ textAlign: 'center', padding: '6px 0' }}>
+            <div style={{ fontSize: 14, color: '#93a7c9', marginBottom: 4, fontWeight: 500 }}>
               {showCompleteSession.deviceName} · {showCompleteSession.tariffName}
             </div>
-            <div className="mono" style={{fontSize:'14px', color:'#c4b5fd', marginBottom:'20px', fontWeight: 600}}>
+            <div className="mono" style={{ fontSize: 14, color: '#93c5fd', marginBottom: 18, fontWeight: 600 }}>
               {formatDuration(showCompleteSession.durationMs)}
             </div>
-            <div style={{background:'linear-gradient(135deg, rgba(34,197,94,0.18), rgba(16,185,129,0.06))', border:'1px solid rgba(34,197,94,0.3)', borderRadius:'20px', padding:'28px 20px', marginBottom:'20px'}}>
-              <div style={{fontSize:'11px', color:'#86efac', textTransform:'uppercase', letterSpacing:'0.15em', marginBottom:'8px', fontWeight: 700}}>Jami summa</div>
-              <div className="stat-number" style={{fontSize:'40px', fontWeight:800, color:'#86efac'}}>
+            <div style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.18), rgba(16,185,129,0.06))', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 20, padding: '26px 18px', marginBottom: 18 }}>
+              <div style={{ fontSize: 11, color: '#86efac', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8, fontWeight: 700 }}>Jami summa</div>
+              <div style={{ fontSize: 38, fontWeight: 800, color: '#86efac', letterSpacing: '-0.03em' }}>
                 {formatMoney(showCompleteSession.amount)}
               </div>
             </div>
-            <button onClick={() => setShowCompleteSession(null)} className="btn btn-primary" style={{width:'100%', padding:'14px', borderRadius:'14px', fontSize:'15px'}}>Yopish</button>
+            <button onClick={() => setShowCompleteSession(null)} className="btn btn-primary wide">Yopish</button>
           </div>
         </Modal>
       )}
@@ -845,12 +1208,9 @@ function Modal({ children, onClose, title }) {
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <div style={{width:'40px', height:'4px', background:'rgba(255,255,255,0.15)', borderRadius:'100px', margin:'0 auto 16px'}}/>
-        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'18px'}}>
-          <div style={{fontSize:'19px', fontWeight:700, letterSpacing: '-0.02em'}}>{title}</div>
-          <button onClick={onClose} style={{background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)', width:'32px', height:'32px', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#a1a1aa'}}>
-            <X size={16}/>
-          </button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.02em' }}>{title}</div>
+          <button onClick={onClose} className="icon-btn"><X size={16} /></button>
         </div>
         {children}
       </div>
@@ -862,11 +1222,9 @@ function AddDeviceForm({ onAdd }) {
   const [name, setName] = useState('');
   return (
     <div>
-      <label style={{display:'block', fontSize:'12px', color:'#a1a1aa', marginBottom:'8px', fontWeight: 600}}>Qurilma nomi</label>
-      <input value={name} onChange={e => setName(e.target.value)} placeholder="masalan: PS5 #1" style={{width:'100%', padding:'13px 14px', borderRadius:'12px', fontSize:'15px', marginBottom:'18px'}}/>
-      <button onClick={() => name.trim() && onAdd(name.trim())} disabled={!name.trim()} className="btn btn-primary" style={{width:'100%', padding:'14px', borderRadius:'12px', fontSize:'15px', opacity: name.trim() ? 1 : 0.5}}>
-        Qo'shish
-      </button>
+      <label className="flabel">Qurilma nomi</label>
+      <input value={name} onChange={e => setName(e.target.value)} placeholder="masalan: PS 7" className="finput" style={{ marginBottom: 16 }} />
+      <button onClick={() => name.trim() && onAdd(name.trim())} disabled={!name.trim()} className="btn btn-primary wide">Qo'shish</button>
     </div>
   );
 }
@@ -876,13 +1234,15 @@ function TariffForm({ onSave, initial }) {
   const [price, setPrice] = useState(initial?.pricePerHour?.toString() || '');
   return (
     <div>
-      <label style={{display:'block', fontSize:'12px', color:'#a1a1aa', marginBottom:'8px', fontWeight: 600}}>Tarif nomi</label>
-      <input value={name} onChange={e => setName(e.target.value)} placeholder="masalan: Oddiy" style={{width:'100%', padding:'13px 14px', borderRadius:'12px', fontSize:'15px', marginBottom:'14px'}}/>
-      <label style={{display:'block', fontSize:'12px', color:'#a1a1aa', marginBottom:'8px', fontWeight: 600}}>1 soat narxi (so'm)</label>
-      <input type="number" inputMode="numeric" value={price} onChange={e => setPrice(e.target.value)} placeholder="20000" style={{width:'100%', padding:'13px 14px', borderRadius:'12px', fontSize:'15px', marginBottom:'18px'}}/>
-      <button onClick={() => { const p = parseInt(price); if (name.trim() && p > 0) onSave(name.trim(), p); }} disabled={!name.trim() || !parseInt(price)} className="btn btn-primary" style={{width:'100%', padding:'14px', borderRadius:'12px', fontSize:'15px', opacity: (name.trim() && parseInt(price)) ? 1 : 0.5}}>
-        Saqlash
-      </button>
+      <label className="flabel">Tarif nomi</label>
+      <input value={name} onChange={e => setName(e.target.value)} placeholder="masalan: Oddiy" className="finput" style={{ marginBottom: 13 }} />
+      <label className="flabel">1 soat narxi (so'm)</label>
+      <input type="number" inputMode="numeric" value={price} onChange={e => setPrice(e.target.value)} placeholder="20000" className="finput" style={{ marginBottom: 16 }} />
+      <button
+        onClick={() => { const p = parseInt(price); if (name.trim() && p > 0) onSave(name.trim(), p); }}
+        disabled={!name.trim() || !parseInt(price)}
+        className="btn btn-primary wide"
+      >Saqlash</button>
     </div>
   );
 }
@@ -890,32 +1250,48 @@ function TariffForm({ onSave, initial }) {
 function TimerSetupForm({ tariffs, onStart }) {
   const [tariffId, setTariffId] = useState(tariffs[0]?.id || '');
   const [minutes, setMinutes] = useState(60);
+  const [noLimit, setNoLimit] = useState(false);
   const presets = [30, 60, 90, 120];
   return (
     <div>
-      <label style={{display:'block', fontSize:'12px', color:'#a1a1aa', marginBottom:'8px', fontWeight: 600}}>Tarif</label>
-      <select value={tariffId} onChange={e => setTariffId(e.target.value)} style={{width:'100%', padding:'13px 14px', borderRadius:'12px', fontSize:'15px', marginBottom:'18px'}}>
+      <label className="flabel">Tarif</label>
+      <select value={tariffId} onChange={e => setTariffId(e.target.value)} className="finput" style={{ marginBottom: 16 }}>
         {tariffs.map(t => <option key={t.id} value={t.id}>{t.name} — {new Intl.NumberFormat('uz-UZ').format(t.pricePerHour)} so'm/soat</option>)}
       </select>
-      <label style={{display:'block', fontSize:'12px', color:'#a1a1aa', marginBottom:'8px', fontWeight: 600}}>Vaqt</label>
-      <div style={{display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:'8px', marginBottom:'10px'}}>
+
+      <label className="flabel">Vaqt</label>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 9 }}>
         {presets.map(p => (
-          <button key={p} onClick={() => setMinutes(p)} style={{padding:'12px 8px', borderRadius:'12px', background: minutes===p ? 'linear-gradient(135deg, #6366f1, #a855f7)' : 'rgba(255,255,255,0.04)', border: '1px solid ' + (minutes===p ? 'transparent' : 'rgba(255,255,255,0.08)'), color:'#e4e4e7', cursor:'pointer', fontWeight:600, fontSize:'13px', fontFamily: 'inherit'}}>
-            {p < 60 ? `${p} daq` : `${p/60} soat`}
+          <button
+            key={p}
+            onClick={() => { setMinutes(p); setNoLimit(false); }}
+            style={{
+              padding: '11px 6px', borderRadius: 12,
+              background: (!noLimit && minutes === p) ? 'linear-gradient(135deg,#2563eb,#0ea5e9)' : 'rgba(255,255,255,0.05)',
+              border: '1px solid ' + ((!noLimit && minutes === p) ? 'transparent' : 'rgba(255,255,255,0.09)'),
+              color: '#e5edff', cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit',
+            }}
+          >
+            {p < 60 ? `${p} daq` : `${p / 60} soat`}
           </button>
         ))}
       </div>
-      <input type="number" inputMode="numeric" value={minutes} onChange={e => setMinutes(parseInt(e.target.value) || 0)} style={{width:'100%', padding:'13px 14px', borderRadius:'12px', fontSize:'15px', marginBottom:'16px'}}/>
-      <div style={{background:'rgba(168,85,247,0.08)', border:'1px solid rgba(168,85,247,0.2)', borderRadius:'14px', padding:'14px', marginBottom:'18px', display:'flex', alignItems:'center', gap:'12px'}}>
-        <div style={{width:'32px', height:'32px', borderRadius:'10px', background:'rgba(168,85,247,0.15)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink: 0}}>
-          <Bell size={16} color="#c4b5fd"/>
+      <input type="number" inputMode="numeric" value={minutes} disabled={noLimit} onChange={e => setMinutes(parseInt(e.target.value) || 0)} className="finput" style={{ marginBottom: 10, opacity: noLimit ? 0.45 : 1 }} />
+
+      <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, marginBottom: 16, cursor: 'pointer' }}>
+        <input type="checkbox" checked={noLimit} onChange={e => setNoLimit(e.target.checked)} style={{ width: 18, height: 18, accentColor: '#0ea5e9' }} />
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700 }}>Vaqt chegarasiz</div>
+          <div style={{ fontSize: 11, color: '#7f93b8', marginTop: 2 }}>Taymer qo'yilmaydi, faqat hisoblab boradi</div>
         </div>
-        <div style={{fontSize:'12px', color:'#c4b5fd', lineHeight: 1.5, fontWeight: 500}}>
-          Vaqt tugaganda <strong>ekranga xabar</strong> + <strong>TV avtomatik o'chadi</strong>
-        </div>
-      </div>
-      <button onClick={() => minutes > 0 && tariffId && onStart(tariffId, minutes)} disabled={!minutes || !tariffId} className="btn btn-success" style={{width:'100%', padding:'14px', borderRadius:'14px', fontSize:'15px', opacity: (minutes && tariffId) ? 1 : 0.5}}>
-        <Play size={16} fill="white"/> Boshlash
+      </label>
+
+      <button
+        onClick={() => { if (!tariffId) return; if (noLimit) onStart(tariffId, null); else if (minutes > 0) onStart(tariffId, minutes); }}
+        disabled={!tariffId || (!noLimit && !minutes)}
+        className="btn btn-success wide"
+      >
+        <Play size={16} fill="white" /> Boshlash
       </button>
     </div>
   );
@@ -925,6 +1301,7 @@ function DeviceSettingsForm({ device, onSave }) {
   const [name, setName] = useState(device.name);
   const [tuyaDeviceId, setTuyaDeviceId] = useState(device.tuyaDeviceId || '');
   const [tvAutoControl, setTvAutoControl] = useState(device.tvAutoControl !== false);
+  const [maintenance, setMaintenance] = useState(!!device.maintenance);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
 
@@ -939,54 +1316,57 @@ function DeviceSettingsForm({ device, onSave }) {
 
   return (
     <div>
-      <label style={{display:'block', fontSize:'12px', color:'#a1a1aa', marginBottom:'8px', fontWeight: 600}}>Qurilma nomi</label>
-      <input value={name} onChange={e => setName(e.target.value)} style={{width:'100%', padding:'13px 14px', borderRadius:'12px', fontSize:'15px', marginBottom:'18px'}}/>
+      <label className="flabel">Qurilma nomi</label>
+      <input value={name} onChange={e => setName(e.target.value)} className="finput" style={{ marginBottom: 16 }} />
 
-      <label style={{display:'block', fontSize:'12px', color:'#a1a1aa', marginBottom:'8px', fontWeight: 600}}>
-        Tuya Smart Plug Device ID
-      </label>
+      <label className="flabel">Tuya Smart Plug Device ID</label>
       <input
         value={tuyaDeviceId}
         onChange={e => setTuyaDeviceId(e.target.value.trim())}
         placeholder="masalan: bf1234abcd..."
-        style={{width:'100%', padding:'13px 14px', borderRadius:'12px', fontSize:'13px', marginBottom:'8px', fontFamily:'JetBrains Mono, monospace'}}
+        className="finput"
+        style={{ marginBottom: 7, fontSize: 13, fontFamily: 'JetBrains Mono, monospace' }}
       />
-      <div style={{fontSize:'11px', color:'#71717a', marginBottom:'14px', lineHeight: 1.5}}>
+      <div style={{ fontSize: 11, color: '#7f93b8', marginBottom: 13, lineHeight: 1.5 }}>
         Tuya IoT Platform → Devices → Device ID ni nusxalab qo'ying
       </div>
 
       {tuyaDeviceId && (
         <>
-          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'12px'}}>
-            <button onClick={() => testConnection('on')} disabled={testing} className="btn btn-success" style={{padding:'11px', borderRadius:'10px', fontSize:'13px', opacity: testing ? 0.6 : 1}}>
-              <Power size={13}/> ON test
-            </button>
-            <button onClick={() => testConnection('off')} disabled={testing} className="btn btn-danger" style={{padding:'11px', borderRadius:'10px', fontSize:'13px', opacity: testing ? 0.6 : 1}}>
-              <Power size={13}/> OFF test
-            </button>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 11 }}>
+            <button onClick={() => testConnection('on')} disabled={testing} className="btn btn-success sm"><Power size={13} /> ON test</button>
+            <button onClick={() => testConnection('off')} disabled={testing} className="btn btn-danger sm"><Power size={13} /> OFF test</button>
           </div>
           {testResult === 'success' && (
-            <div style={{padding:'10px', background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.3)', borderRadius:'10px', color:'#86efac', fontSize:'12px', marginBottom:'14px', fontWeight:600, textAlign:'center'}}>
+            <div style={{ padding: 10, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 10, color: '#86efac', fontSize: 12, marginBottom: 13, fontWeight: 700, textAlign: 'center' }}>
               ✓ TV bilan aloqa muvaffaqiyatli!
             </div>
           )}
           {testResult === 'error' && (
-            <div style={{padding:'10px', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', borderRadius:'10px', color:'#fca5a5', fontSize:'12px', marginBottom:'14px', fontWeight:600, textAlign:'center'}}>
+            <div style={{ padding: 10, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, color: '#fca5a5', fontSize: 12, marginBottom: 13, fontWeight: 700, textAlign: 'center' }}>
               ✗ Xatolik. Device ID va API kalitlarni tekshiring.
             </div>
           )}
         </>
       )}
 
-      <label style={{display:'flex', alignItems:'center', gap:'10px', padding:'14px', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:'12px', marginBottom:'18px', cursor:'pointer'}}>
-        <input type="checkbox" checked={tvAutoControl} onChange={e => setTvAutoControl(e.target.checked)} style={{width:'18px', height:'18px', accentColor:'#a855f7'}}/>
-        <div style={{flex:1}}>
-          <div style={{fontSize:'13px', fontWeight:600, color:'#e4e4e7'}}>TV avtomatik boshqaruvi</div>
-          <div style={{fontSize:'11px', color:'#71717a', marginTop:'2px'}}>Ochish/Yopish paytida TV avtomatik yoq/o'ch</div>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 13, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, marginBottom: 10, cursor: 'pointer' }}>
+        <input type="checkbox" checked={tvAutoControl} onChange={e => setTvAutoControl(e.target.checked)} style={{ width: 18, height: 18, accentColor: '#0ea5e9' }} />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 13, fontWeight: 700 }}>TV avtomatik boshqaruvi</div>
+          <div style={{ fontSize: 11, color: '#7f93b8', marginTop: 2 }}>Boshlash/To'xtatish paytida TV avtomatik yoq/o'ch</div>
         </div>
       </label>
 
-      <button onClick={() => onSave({ name: name.trim(), tuyaDeviceId, tvAutoControl })} className="btn btn-primary" style={{width:'100%', padding:'14px', borderRadius:'12px', fontSize:'15px'}}>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 13, background: 'rgba(244,63,94,0.07)', border: '1px solid rgba(244,63,94,0.2)', borderRadius: 12, marginBottom: 16, cursor: 'pointer' }}>
+        <input type="checkbox" checked={maintenance} onChange={e => setMaintenance(e.target.checked)} style={{ width: 18, height: 18, accentColor: '#f43f5e' }} />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}><Wrench size={13} color="#fda4af" /> Texnik xizmat holati</div>
+          <div style={{ fontSize: 11, color: '#7f93b8', marginTop: 2 }}>Yoqilsa, bu qurilmada seans boshlab bo'lmaydi</div>
+        </div>
+      </label>
+
+      <button onClick={() => onSave({ name: name.trim() || device.name, tuyaDeviceId, tvAutoControl, maintenance })} className="btn btn-primary wide">
         Saqlash
       </button>
     </div>
