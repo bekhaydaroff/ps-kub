@@ -630,17 +630,16 @@ export default function PlayStationClub() {
           box-shadow: 0 0 34px -12px rgba(251,191,36,0.8);
         }
         .dev.st-busy { background: linear-gradient(160deg, rgba(20,83,45,0.42), rgba(7,14,34,0.92)); }
-        .dev.st-alert { background: linear-gradient(160deg, rgba(127,29,29,0.45), rgba(20,8,20,0.9)); }
+        .dev.st-alert {
+          background: linear-gradient(160deg, rgba(127,29,29,0.45), rgba(20,8,20,0.9));
+          border-color: rgba(248,113,113,0.75);
+          box-shadow: 0 0 30px -6px rgba(239,68,68,0.6);
+        }
         .dev.st-maint { border-color: rgba(251,113,133,0.5); box-shadow: 0 0 26px -12px rgba(251,113,133,0.6); opacity: 0.85; }
         .vip-tag {
           margin-left: 7px; font-size: 9px; font-weight: 800; letter-spacing: 0.08em;
           padding: 2px 6px; border-radius: 5px; vertical-align: middle;
           background: linear-gradient(135deg,#f59e0b,#fbbf24); color: #442200;
-        }
-        .dev.st-alert { border-color: rgba(248,113,113,0.75); animation: pulse-alert 0.9s ease-in-out infinite; }
-        @keyframes pulse-alert {
-          0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.45), 0 0 28px -6px rgba(239,68,68,0.5); }
-          50% { box-shadow: 0 0 0 7px rgba(239,68,68,0), 0 0 56px -6px rgba(239,68,68,0.75); }
         }
         .dev-top { display: flex; gap: 12px; }
         .screen {
@@ -660,8 +659,7 @@ export default function PlayStationClub() {
         .dev-name { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; }
         .dev-status { font-size: 12px; font-weight: 700; margin-top: 3px; display: flex; align-items: center; gap: 6px; }
         .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
-        .dot.live { background: #4ade80; box-shadow: 0 0 10px #4ade80; animation: pulse-dot 1.5s ease-in-out infinite; }
-        @keyframes pulse-dot { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: 0.55; transform: scale(1.3);} }
+        .dot.live { background: #4ade80; box-shadow: 0 0 10px #4ade80; }
         .dev-meta { font-size: 11px; color: #7f93b8; margin-top: 4px; display: flex; align-items: center; gap: 5px; font-weight: 500; }
         .dev-live { margin-top: 12px; background: rgba(0,0,0,0.36); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 10px 12px; }
         .dev-live-row { display: flex; align-items: baseline; justify-content: space-between; }
