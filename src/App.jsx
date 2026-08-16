@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Play, Square, Plus, Trash2, BarChart3, Clock, DollarSign, Gamepad2, X, Edit2,
   Bell, Calendar, TrendingUp, Zap, Activity, Tv, Power, Settings, Wifi, WifiOff,
-  Wallet, Users, Home, Wrench, Timer, PauseCircle, CheckCircle2, LayoutGrid,
+  Wallet, Users, Home, Wrench, Timer, Crown, CheckCircle2, LayoutGrid,
 } from 'lucide-react';
 
 const storage = {
@@ -42,7 +42,6 @@ const WEEKDAYS_SHORT = ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'];
 const MENU = [
   { id: 'home', label: 'Bosh sahifa', sub: 'Umumiy holat', icon: Home, g: 'linear-gradient(135deg,#6d28d9,#a855f7)' },
   { id: 'devices', label: 'Qurilmalar', sub: 'Barcha PS', icon: Gamepad2, g: 'linear-gradient(135deg,#0369a1,#0ea5e9)' },
-  { id: 'active', label: 'Faol qurilmalar', sub: 'Ishlab turgan', icon: Zap, g: 'linear-gradient(135deg,#15803d,#22c55e)' },
   { id: 'tariffs', label: 'Tariflar', sub: 'Narxlar', icon: DollarSign, g: 'linear-gradient(135deg,#be185d,#ec4899)' },
   { id: 'stats', label: 'Hisobot olish', sub: 'Daromad', icon: BarChart3, g: 'linear-gradient(135deg,#c2410c,#f59e0b)' },
   { id: 'settings', label: 'Sozlamalar', sub: 'Tizim', icon: Settings, g: 'linear-gradient(135deg,#334155,#64748b)' },
@@ -67,13 +66,13 @@ export default function PlayStationClub() {
   useEffect(() => {
     const sd = storage.get('ps_devices');
     if (sd && Array.isArray(sd) && sd.length > 0) {
-      setDevices(sd.map(d => ({ tuyaDeviceId: '', tvAutoControl: true, maintenance: false, ...d })));
+      setDevices(sd.map(d => ({ tuyaDeviceId: '', tvAutoControl: true, maintenance: false, vip: false, ...d })));
     } else {
       const initial = Array.from({ length: 6 }, (_, i) => ({
         id: `dev_${Date.now()}_${i}`, name: `PS ${i + 1}`,
         running: false, startTime: null, tariffId: null,
         scheduledMinutes: null, alerted: false,
-        tuyaDeviceId: '', tvAutoControl: true, maintenance: false,
+        tuyaDeviceId: '', tvAutoControl: true, maintenance: false, vip: false,
       }));
       setDevices(initial);
       storage.set('ps_devices', initial);
@@ -156,7 +155,7 @@ export default function PlayStationClub() {
     try { if (navigator.vibrate) navigator.vibrate([400, 150, 400, 150, 400]); } catch (e) {}
   };
 
-  const startDevice = async (deviceId, tariffId, minutes = null) => {
+  const startDevice = async (deviceId, tariffId, minutes = null, vip = false) => {
     const device = devices.find(d => d.id === deviceId);
     if (!device) return;
     if (device.maintenance) {
@@ -165,7 +164,7 @@ export default function PlayStationClub() {
     }
     const updated = devices.map(d => d.id === deviceId ? {
       ...d, running: true, startTime: Date.now(), tariffId,
-      scheduledMinutes: minutes, alerted: false,
+      scheduledMinutes: vip ? null : minutes, alerted: false, vip,
     } : d);
     saveDevices(updated);
 
@@ -188,13 +187,13 @@ export default function PlayStationClub() {
       id: `s_${Date.now()}`, deviceId, deviceName: device.name,
       tariffName: tariff.name, pricePerHour: tariff.pricePerHour,
       startTime: device.startTime, endTime: Date.now(),
-      durationMs: elapsedMs, amount,
+      durationMs: elapsedMs, amount, vip: !!device.vip,
     };
     saveSessions([session, ...sessions]);
 
     const updated = devices.map(d => d.id === deviceId ? {
       ...d, running: false, startTime: null, tariffId: null,
-      scheduledMinutes: null, alerted: false,
+      scheduledMinutes: null, alerted: false, vip: false,
     } : d);
     saveDevices(updated);
 
@@ -216,7 +215,7 @@ export default function PlayStationClub() {
     saveDevices([...devices, {
       id: `dev_${Date.now()}`, name, running: false, startTime: null,
       tariffId: null, scheduledMinutes: null, alerted: false,
-      tuyaDeviceId: '', tvAutoControl: true, maintenance: false,
+      tuyaDeviceId: '', tvAutoControl: true, maintenance: false, vip: false,
     }]);
   };
 
@@ -276,6 +275,7 @@ export default function PlayStationClub() {
   };
   const deviceStatus = (d) => {
     if (d.alerted) return { key: 'alert', text: 'Vaqt tugadi', color: '#f87171' };
+    if (d.running && d.vip) return { key: 'vip', text: 'VIP · band', color: '#fbbf24' };
     if (d.running) return { key: 'busy', text: 'Band', color: '#4ade80' };
     if (d.maintenance) return { key: 'maint', text: 'Texnik xizmat', color: '#fb7185' };
     return { key: 'free', text: 'Bo\'sh', color: '#38bdf8' };
@@ -393,14 +393,15 @@ export default function PlayStationClub() {
         <div className="dev-top">
           <DeviceScreen status={st} />
           <div className="dev-info">
-            <div className="dev-name">{device.name}</div>
+            <div className="dev-name">
+              {device.name}
+              {device.running && device.vip && <span className="vip-tag">VIP</span>}
+            </div>
             <div className="dev-status" style={{ color: st.color }}>
               <span className="dot" style={{ background: st.color, boxShadow: `0 0 10px ${st.color}` }} />
               {st.text}
             </div>
-            <div className="dev-meta">
-              {tariff ? `Tarif: ${tariff.name}` : 'Tarif: —'}
-            </div>
+            <div className="dev-meta">{tariff ? tariff.name : 'Tarif: —'}</div>
             <div className="dev-meta">
               {hasTV ? <><Wifi size={11} /> TV ulangan</> : <><WifiOff size={11} /> TV yo'q</>}
             </div>
@@ -413,20 +414,20 @@ export default function PlayStationClub() {
               <div className="bar"><div className="bar-fill" style={{ width: `${progress}%`, background: device.alerted ? 'linear-gradient(90deg,#ef4444,#dc2626)' : 'linear-gradient(90deg,#22c55e,#16a34a)' }} /></div>
             ) : null}
             <div className="dev-live-row">
-              <span className="mono timer">{formatDuration(elapsedMs)}</span>
+              <span className="mono timer" style={{ color: device.alerted ? '#fca5a5' : (device.vip ? '#fcd34d' : '#6ee7b7') }}>{formatDuration(elapsedMs)}</span>
               <span className="amt">{formatShort(getCurrentAmount(device))}</span>
             </div>
-            {remaining !== null && !device.alerted && (
-              <div className="dev-remain mono">Qolgan: {formatDuration(Math.max(0, remaining))}</div>
-            )}
+            <div className="dev-remain mono">
+              {device.alerted ? '⏰ Vaqt tugadi' : (remaining !== null ? `Qolgan: ${formatDuration(Math.max(0, remaining))}` : 'VIP · vaqt chegarasiz')}
+            </div>
           </div>
         )}
 
         <div className="dev-btns">
           {device.running ? (
             <>
-              <button className="btn btn-danger" onClick={() => stopDevice(device.id)}><Square size={14} fill="white" /> To'xtatish</button>
-              <button className="btn btn-ghost" onClick={() => setEditingDevice(device)}><Settings size={14} /> Ma'lumot</button>
+              <button className="btn btn-danger" onClick={() => stopDevice(device.id)}><Square size={13} fill="white" /> To'xtatish</button>
+              <button className="btn btn-ghost" onClick={() => setEditingDevice(device)}><Settings size={13} /> Ma'lumot</button>
             </>
           ) : (
             <>
@@ -435,78 +436,15 @@ export default function PlayStationClub() {
                 disabled={device.maintenance}
                 onClick={() => { if (tariffs.length === 0) { alert('Avval tarif qo\'shing!'); return; } setShowTimerSetup(device.id); }}
               >
-                <Play size={14} fill="white" /> Boshlash
+                <Play size={13} fill="white" /> Boshlash
               </button>
-              <button className="btn btn-ghost" onClick={() => setEditingDevice(device)}><Settings size={14} /> Ma'lumot</button>
+              <button className="btn btn-ghost" onClick={() => setEditingDevice(device)}><Settings size={13} /> Ma'lumot</button>
             </>
           )}
         </div>
       </div>
     );
   };
-
-  const ActiveCard = ({ device }) => {
-    const tariff = tariffs.find(t => t.id === device.tariffId);
-    const remaining = getRemainingTime(device);
-    const elapsedMs = Date.now() - device.startTime;
-    const progress = getProgress(device);
-    return (
-      <div className={`act ${device.alerted ? 'act-alert' : ''}`}>
-        <div className="act-head">
-          <div className="act-name">
-            <span className="dot live" />
-            {device.name}
-          </div>
-          {tariff && <span className="chip">{tariff.name} · {formatShort(tariff.pricePerHour)}/soat</span>}
-        </div>
-        <div className="act-body">
-          <div className="act-cell">
-            <div className="cell-label">{device.alerted ? '⏰ VAQT TUGADI' : 'O\'tgan vaqt'}</div>
-            <div className="mono cell-val" style={{ color: device.alerted ? '#fca5a5' : '#6ee7b7' }}>{formatDuration(elapsedMs)}</div>
-          </div>
-          <div className="act-cell">
-            <div className="cell-label">Qolgan vaqt</div>
-            <div className="mono cell-val" style={{ color: '#93c5fd' }}>
-              {remaining !== null ? formatDuration(Math.max(0, remaining)) : '∞'}
-            </div>
-          </div>
-          <div className="act-cell">
-            <div className="cell-label">Joriy summa</div>
-            <div className="cell-val" style={{ color: '#fff' }}>{formatShort(getCurrentAmount(device))}</div>
-          </div>
-        </div>
-        {device.scheduledMinutes ? (
-          <div className="bar"><div className="bar-fill" style={{ width: `${progress}%`, background: device.alerted ? 'linear-gradient(90deg,#ef4444,#dc2626)' : 'linear-gradient(90deg,#22c55e,#4ade80)' }} /></div>
-        ) : null}
-        <div className="act-btns">
-          <button className="btn btn-danger" onClick={() => stopDevice(device.id)}><Square size={14} fill="white" /> To'xtatish va hisoblash</button>
-          {device.tuyaDeviceId && (
-            <button className="btn btn-ghost" onClick={() => toggleTV(device, false)} title="TV ni o'chirish"><Power size={14} /> TV</button>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const ActivePanel = ({ compact }) => (
-    <section className="panel">
-      <div className="panel-head">
-        <div className="panel-title"><Zap size={16} color="#4ade80" /> Faol qurilmalar</div>
-        <span className="badge badge-green">{runningDevices.length} ta ishlamoqda</span>
-      </div>
-      {runningDevices.length === 0 ? (
-        <div className="empty">
-          <PauseCircle size={26} color="#3b4a6b" />
-          <div>Hozir ishlab turgan qurilma yo'q</div>
-          <button className="btn btn-primary sm" onClick={() => setView('devices')}><Play size={13} fill="white" /> Seans boshlash</button>
-        </div>
-      ) : (
-        <div className={compact ? 'act-grid compact' : 'act-grid'}>
-          {runningDevices.map(d => <ActiveCard key={d.id} device={d} />)}
-        </div>
-      )}
-    </section>
-  );
 
   const TodayActivePanel = () => (
     <section className="panel">
@@ -574,17 +512,26 @@ export default function PlayStationClub() {
         @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { margin: 0; padding: 0; }
-        body { background: #050b1c; font-family: 'Sora', system-ui, sans-serif; }
+        body { background: #050b1c; font-family: 'Sora', system-ui, sans-serif; display: block; }
+        #root {
+          width: 100%; max-width: none; margin: 0; padding: 0;
+          text-align: left; border: 0; display: block; min-height: 0;
+        }
         .ps-app {
-          min-height: 100vh; color: #e5edff;
+          min-height: 100vh; color: #e5edff; line-height: 1.35; letter-spacing: 0;
           background:
             radial-gradient(ellipse 70% 45% at 50% -8%, rgba(37,99,235,0.30), transparent 62%),
             radial-gradient(ellipse 55% 40% at 88% 78%, rgba(168,85,247,0.16), transparent 70%),
             radial-gradient(ellipse 55% 40% at 8% 62%, rgba(6,182,212,0.10), transparent 65%),
             #050b1c;
-          padding-bottom: 128px;
+          padding-bottom: 120px;
         }
         .mono { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+
+        .kpi-row { display: flex; align-items: center; gap: 8px; }
+        .scroll::-webkit-scrollbar { width: 6px; }
+        .scroll::-webkit-scrollbar-thumb { background: rgba(96,165,250,0.28); border-radius: 100px; }
+        .scroll::-webkit-scrollbar-track { background: transparent; }
 
         /* ---------- TOP BAR ---------- */
         .topbar {
@@ -636,8 +583,8 @@ export default function PlayStationClub() {
           box-shadow: 0 18px 36px -22px rgba(0,0,0,0.9), 0 1px 0 0 rgba(255,255,255,0.08) inset;
         }
         .kpi-ico {
-          width: 38px; height: 38px; border-radius: 12px; background: rgba(255,255,255,0.16);
-          display: flex; align-items: center; justify-content: center; margin-bottom: 12px;
+          width: 30px; height: 30px; border-radius: 10px; background: rgba(255,255,255,0.16);
+          display: flex; align-items: center; justify-content: center; flex-shrink: 0;
         }
         .kpi-lbl { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.82); }
         .kpi-val { font-size: 26px; font-weight: 800; letter-spacing: -0.035em; margin-top: 4px; font-variant-numeric: tabular-nums; }
@@ -677,7 +624,19 @@ export default function PlayStationClub() {
         .dev:hover { transform: translateY(-2px); }
         .dev.st-free { border-color: rgba(56,189,248,0.45); box-shadow: 0 0 26px -12px rgba(56,189,248,0.7); }
         .dev.st-busy { border-color: rgba(74,222,128,0.5); box-shadow: 0 0 30px -12px rgba(74,222,128,0.75); }
-        .dev.st-maint { border-color: rgba(251,113,133,0.5); box-shadow: 0 0 26px -12px rgba(251,113,133,0.6); }
+        .dev.st-vip {
+          border-color: rgba(251,191,36,0.6);
+          background: linear-gradient(160deg, rgba(120,53,15,0.45), rgba(7,14,34,0.92));
+          box-shadow: 0 0 34px -12px rgba(251,191,36,0.8);
+        }
+        .dev.st-busy { background: linear-gradient(160deg, rgba(20,83,45,0.42), rgba(7,14,34,0.92)); }
+        .dev.st-alert { background: linear-gradient(160deg, rgba(127,29,29,0.45), rgba(20,8,20,0.9)); }
+        .dev.st-maint { border-color: rgba(251,113,133,0.5); box-shadow: 0 0 26px -12px rgba(251,113,133,0.6); opacity: 0.85; }
+        .vip-tag {
+          margin-left: 7px; font-size: 9px; font-weight: 800; letter-spacing: 0.08em;
+          padding: 2px 6px; border-radius: 5px; vertical-align: middle;
+          background: linear-gradient(135deg,#f59e0b,#fbbf24); color: #442200;
+        }
         .dev.st-alert { border-color: rgba(248,113,113,0.75); animation: pulse-alert 0.9s ease-in-out infinite; }
         @keyframes pulse-alert {
           0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.45), 0 0 28px -6px rgba(239,68,68,0.5); }
@@ -693,6 +652,7 @@ export default function PlayStationClub() {
         }
         .screen[data-st="busy"] { background: linear-gradient(160deg,#15803d,#0d9488); box-shadow: 0 10px 22px -10px rgba(34,197,94,0.85); }
         .screen[data-st="maint"] { background: linear-gradient(160deg,#9f1239,#a21caf); box-shadow: 0 10px 22px -10px rgba(236,72,153,0.8); }
+        .screen[data-st="vip"] { background: linear-gradient(160deg,#b45309,#f59e0b); box-shadow: 0 10px 22px -10px rgba(245,158,11,0.9); }
         .screen[data-st="alert"] { background: linear-gradient(160deg,#b91c1c,#7f1d1d); }
         .screen-glow { position: absolute; inset: 0; border-radius: 7px; background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.28), transparent 65%); }
         .screen-stand { position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); width: 26px; height: 6px; border-radius: 0 0 5px 5px; background: rgba(255,255,255,0.18); }
@@ -788,8 +748,8 @@ export default function PlayStationClub() {
           backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
           border-top: 1px solid rgba(96,165,250,0.16);
         }
-        .bm-row { display: grid; grid-template-columns: repeat(6,1fr); gap: 10px; max-width: 1500px; margin: 0 auto; }
-        @media (max-width: 860px) { .bm-row { grid-template-columns: repeat(6,1fr); gap: 6px; } }
+        .bm-row { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; max-width: 1500px; margin: 0 auto; }
+        @media (max-width: 860px) { .bm-row { grid-template-columns: repeat(5,1fr); gap: 6px; } }
         .bm {
           border: 1px solid rgba(255,255,255,0.10); border-radius: 14px;
           padding: 11px 12px; cursor: pointer; font-family: inherit; color: #fff;
@@ -823,6 +783,17 @@ export default function PlayStationClub() {
         }
         @media (min-width: 700px) { .modal-content { border-radius: 22px; } }
         .flabel { display: block; font-size: 12px; color: #93a7c9; margin-bottom: 7px; font-weight: 600; }
+        .mode-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 16px; }
+        .mode {
+          display: flex; align-items: center; gap: 9px; text-align: left; cursor: pointer;
+          padding: 12px; border-radius: 14px; font-family: inherit; color: #93a7c9;
+          background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09);
+          transition: all 0.2s;
+        }
+        .mode.on.timed { background: linear-gradient(135deg, rgba(37,99,235,0.28), rgba(14,165,233,0.14)); border-color: rgba(56,189,248,0.6); color: #dbeafe; }
+        .mode.on.vip { background: linear-gradient(135deg, rgba(245,158,11,0.28), rgba(251,191,36,0.12)); border-color: rgba(251,191,36,0.65); color: #fde68a; }
+        .mode-t { font-size: 13.5px; font-weight: 800; letter-spacing: -0.02em; }
+        .mode-s { font-size: 10.5px; opacity: 0.85; margin-top: 2px; line-height: 1.35; }
         .finput { width: 100%; padding: 12px 13px; border-radius: 12px; font-size: 15px; }
 
         @keyframes fade-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
@@ -830,6 +801,58 @@ export default function PlayStationClub() {
         .fade-up-1 { animation-delay: .04s } .fade-up-2 { animation-delay: .08s }
         .fade-up-3 { animation-delay: .12s } .fade-up-4 { animation-delay: .16s }
         .fade-up-5 { animation-delay: .2s }  .fade-up-6 { animation-delay: .24s }
+
+        /* ---------- ONE-SCREEN DESKTOP LAYOUT (oxirida turishi shart) ---------- */
+        @media (min-width: 1101px) {
+          .ps-app { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; padding-bottom: 78px; }
+          .page { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; padding: 12px 18px; width: 100%; align-self: center; margin: 0; }
+          .layout.fit { flex: 1; min-height: 0; gap: 12px; }
+          .layout.fit .col { height: 100%; min-height: 0; }
+          .panel.grow { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+          .panel.grow .scroll { flex: 1; min-height: 0; overflow-y: auto; padding-right: 4px; }
+          .page-head { margin-bottom: 10px; }
+          .page-title { font-size: 20px; }
+          .page-sub { font-size: 12px; margin-top: 2px; }
+          .kpis { margin-bottom: 10px; gap: 10px; }
+          .kpi { padding: 9px 12px; border-radius: 15px; }
+          .kpi-val { font-size: 21px; margin-top: 1px; }
+          .kpi-foot { margin-top: 3px; }
+          .kpi-ico { width: 27px; height: 27px; border-radius: 9px; }
+          .col { gap: 10px; }
+          .panel { padding: 12px 13px; border-radius: 17px; }
+          .panel-head { margin-bottom: 10px; }
+          .chart { height: 100px; }
+          .chart-foot { margin-top: 8px; padding-top: 8px; }
+          .dev-grid { grid-template-columns: repeat(auto-fill, minmax(205px, 1fr)); gap: 8px; }
+          .dev { padding: 9px; border-radius: 14px; }
+          .dev-top { gap: 10px; }
+          .screen { width: 52px; height: 39px; border-radius: 7px; }
+          .screen-stand { width: 18px; height: 5px; bottom: -6px; }
+          .dev-name { font-size: 13.5px; }
+          .dev-status { font-size: 11px; margin-top: 2px; }
+          .dev-meta { font-size: 10.5px; margin-top: 2px; }
+          .dev-live { margin-top: 7px; padding: 6px 8px; border-radius: 10px; }
+          .timer { font-size: 15px; }
+          .amt { font-size: 12.5px; }
+          .dev-remain { font-size: 9.5px; margin-top: 1px; }
+          .bar { height: 3px; margin-bottom: 6px; }
+          .dev-btns { margin-top: 7px; gap: 6px; }
+          .dev-btns .btn { padding: 6px 5px; font-size: 11.5px; border-radius: 9px; gap: 5px; }
+          .tad { padding: 6px 9px; border-radius: 11px; }
+          .tad-ico { width: 29px; height: 29px; border-radius: 9px; }
+          .tad-name { font-size: 12.5px; }
+          .tad-sub { font-size: 10.5px; }
+          .tad-amt { font-size: 12.5px; }
+          .tad-list { gap: 6px; }
+          .bottom-menu { padding: 8px 12px; }
+          .bm { padding: 9px 11px; border-radius: 12px; }
+        }
+        @media (min-width: 1101px) and (max-height: 820px) {
+          .page-sub { display: none; }
+          .chart-val { display: none; }
+          .chart { height: 84px; }
+          .kpi-val { font-size: 20px; }
+        }
       `}</style>
 
       {/* ============ TOP BAR ============ */}
@@ -872,26 +895,22 @@ export default function PlayStationClub() {
 
             <div className="kpis">
               <div className="kpi fade-up fade-up-1" style={{ background: 'linear-gradient(135deg,#6d28d9,#8b5cf6)' }}>
-                <div className="kpi-ico"><Users size={19} color="#fff" /></div>
-                <div className="kpi-lbl">Bugungi seanslar</div>
+                <div className="kpi-row"><div className="kpi-ico"><Users size={16} color="#fff" /></div><div className="kpi-lbl">Bugungi seanslar</div></div>
                 <div className="kpi-val">{stats.today.count}</div>
                 <div className="kpi-foot"><Clock size={11} /> Kechagi: {stats.yesterday.count}</div>
               </div>
               <div className="kpi fade-up fade-up-2" style={{ background: 'linear-gradient(135deg,#15803d,#22c55e)' }}>
-                <div className="kpi-ico"><Zap size={19} color="#fff" /></div>
-                <div className="kpi-lbl">Faol seanslar</div>
+                <div className="kpi-row"><div className="kpi-ico"><Zap size={16} color="#fff" /></div><div className="kpi-lbl">Faol seanslar</div></div>
                 <div className="kpi-val">{runningDevices.length}</div>
                 <div className="kpi-foot">{runningDevices.length > 0 ? 'Hozirda o\'yin ketmoqda' : 'Hammasi bo\'sh'}</div>
               </div>
               <div className="kpi fade-up fade-up-3" style={{ background: 'linear-gradient(135deg,#1d4ed8,#0ea5e9)' }}>
-                <div className="kpi-ico"><Timer size={19} color="#fff" /></div>
-                <div className="kpi-lbl">Bugungi o'yin soatlari</div>
+                <div className="kpi-row"><div className="kpi-ico"><Timer size={16} color="#fff" /></div><div className="kpi-lbl">Bugungi o'yin soatlari</div></div>
                 <div className="kpi-val">{stats.today.hours.toFixed(1)}</div>
                 <div className="kpi-foot"><Gamepad2 size={11} /> {devices.length} qurilma · {linkedDevices} TV</div>
               </div>
               <div className="kpi fade-up fade-up-4" style={{ background: 'linear-gradient(135deg,#c2410c,#f59e0b)' }}>
-                <div className="kpi-ico"><Wallet size={19} color="#fff" /></div>
-                <div className="kpi-lbl">Bugungi tushum</div>
+                <div className="kpi-row"><div className="kpi-ico"><Wallet size={16} color="#fff" /></div><div className="kpi-lbl">Bugungi tushum</div></div>
                 <div className="kpi-val">{formatShort(stats.today.total)}</div>
                 <div className="kpi-foot">
                   {dayDiff !== null ? <><TrendingUp size={11} /> {dayDiff > 0 ? '+' : ''}{dayDiff}% kechagiga nisbatan</> : 'so\'m'}
@@ -899,22 +918,57 @@ export default function PlayStationClub() {
               </div>
             </div>
 
-            <div className="layout">
+            <div className="layout fit">
               <div className="col">
-                <ActivePanel />
-                <section className="panel">
+                <section className="panel grow">
                   <div className="panel-head">
                     <div className="panel-title"><LayoutGrid size={16} color="#38bdf8" /> PS zallar holati</div>
-                    <span className="badge badge-blue">{devices.filter(d => !d.running && !d.maintenance).length} bo'sh</span>
+                    <div style={{ display: 'flex', gap: 7 }}>
+                      <span className="badge badge-green">{runningDevices.length} band</span>
+                      <span className="badge badge-blue">{devices.filter(d => !d.running && !d.maintenance).length} bo'sh</span>
+                    </div>
                   </div>
-                  <div className="dev-grid">
-                    {devices.map((d, i) => <DeviceCard key={d.id} device={d} idx={i} />)}
+                  <div className="scroll">
+                    <div className="dev-grid">
+                      {devices.map((d, i) => <DeviceCard key={d.id} device={d} idx={i} />)}
+                    </div>
                   </div>
                 </section>
               </div>
 
               <div className="col">
-                <TodayActivePanel />
+                <section className="panel grow">
+                  <div className="panel-head">
+                    <div className="panel-title"><Activity size={16} color="#60a5fa" /> Bugungi faol qurilmalar</div>
+                    <button className="link" onClick={() => setView('stats')}>Barchasi →</button>
+                  </div>
+                  <div className="scroll">
+                    {todayActiveDevices.length === 0 ? (
+                      <div className="empty sm"><Calendar size={22} color="#3b4a6b" /><div>Bugun hali seans bo'lmadi</div></div>
+                    ) : (
+                      <div className="tad-list">
+                        {todayActiveDevices.map(({ device, count, total, ms }) => {
+                          const st = deviceStatus(device);
+                          return (
+                            <div key={device.id} className="tad">
+                              <div className="tad-ico" style={{ borderColor: `${st.color}55`, background: `${st.color}18` }}>
+                                <Gamepad2 size={16} color={st.color} />
+                              </div>
+                              <div className="tad-mid">
+                                <div className="tad-name">
+                                  {device.name}
+                                  {device.running && <span className="dot live" style={{ marginLeft: 8 }} />}
+                                </div>
+                                <div className="tad-sub">{count} ta seans · {formatDuration(ms)}</div>
+                              </div>
+                              <div className="tad-amt">{formatShort(total)}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </section>
                 <WeeklyPanel />
               </div>
             </div>
@@ -937,31 +991,6 @@ export default function PlayStationClub() {
                 {devices.map((d, i) => <DeviceCard key={d.id} device={d} idx={i} />)}
               </div>
             </section>
-          </>
-        )}
-
-        {/* ============ ACTIVE DEVICES ============ */}
-        {view === 'active' && (
-          <>
-            <div className="page-head">
-              <div className="page-title"><Zap size={22} color="#4ade80" /> Faol qurilmalar</div>
-              <div className="page-sub">Hozir ishlab turgan seanslar, taymer va joriy summa</div>
-            </div>
-            <div className="kpis" style={{ gridTemplateColumns: 'repeat(3,1fr)' }}>
-              <div className="kpi" style={{ background: 'linear-gradient(135deg,#15803d,#22c55e)' }}>
-                <div className="kpi-lbl">Ishlab turibdi</div>
-                <div className="kpi-val">{runningDevices.length} / {devices.length}</div>
-              </div>
-              <div className="kpi" style={{ background: 'linear-gradient(135deg,#1d4ed8,#0ea5e9)' }}>
-                <div className="kpi-lbl">Joriy summa (jami)</div>
-                <div className="kpi-val">{formatShort(runningDevices.reduce((a, d) => a + getCurrentAmount(d), 0))}</div>
-              </div>
-              <div className="kpi" style={{ background: 'linear-gradient(135deg,#be185d,#ec4899)' }}>
-                <div className="kpi-lbl">Vaqti tugagan</div>
-                <div className="kpi-val">{devices.filter(d => d.alerted).length}</div>
-              </div>
-            </div>
-            <ActivePanel />
           </>
         )}
 
@@ -1065,7 +1094,11 @@ export default function PlayStationClub() {
                             <CheckCircle2 size={15} color="#60a5fa" />
                           </div>
                           <div className="tad-mid">
-                            <div className="tad-name">{s.deviceName} <span style={{ color: '#7f93b8', fontWeight: 500, marginLeft: 6, fontSize: 11 }}>{s.tariffName}</span></div>
+                            <div className="tad-name">
+                              {s.deviceName}
+                              <span style={{ color: '#7f93b8', fontWeight: 500, marginLeft: 6, fontSize: 11 }}>{s.tariffName}</span>
+                              {s.vip && <span className="vip-tag">VIP</span>}
+                            </div>
                             <div className="tad-sub">
                               {new Date(s.endTime).toLocaleString('uz-UZ', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} · {formatDuration(s.durationMs)}
                             </div>
@@ -1162,7 +1195,7 @@ export default function PlayStationClub() {
                 <Icon size={18} color="#fff" strokeWidth={on ? 2.4 : 2} />
                 <div className="bm-txt">
                   <div className="bm-lbl">{m.label}</div>
-                  <div className="bm-sub">{m.id === 'active' ? `${runningDevices.length} ta faol` : m.sub}</div>
+                  <div className="bm-sub">{m.id === 'home' ? `${runningDevices.length} ta band` : m.sub}</div>
                 </div>
               </button>
             );
@@ -1250,48 +1283,78 @@ function TariffForm({ onSave, initial }) {
 function TimerSetupForm({ tariffs, onStart }) {
   const [tariffId, setTariffId] = useState(tariffs[0]?.id || '');
   const [minutes, setMinutes] = useState(60);
-  const [noLimit, setNoLimit] = useState(false);
+  const [mode, setMode] = useState('timed'); // 'timed' | 'vip'
   const presets = [30, 60, 90, 120];
+  const tariff = tariffs.find(t => t.id === tariffId);
+  const vip = mode === 'vip';
+
   return (
     <div>
+      <label className="flabel">Seans turi</label>
+      <div className="mode-row">
+        <button className={`mode ${!vip ? 'on timed' : ''}`} onClick={() => setMode('timed')}>
+          <Clock size={17} />
+          <div>
+            <div className="mode-t">Vaqt bilan</div>
+            <div className="mode-s">Belgilangan vaqtda tugaydi</div>
+          </div>
+        </button>
+        <button className={`mode ${vip ? 'on vip' : ''}`} onClick={() => setMode('vip')}>
+          <Crown size={17} />
+          <div>
+            <div className="mode-t">VIP</div>
+            <div className="mode-s">Vaqt belgilanmaydi, hisoblab boradi</div>
+          </div>
+        </button>
+      </div>
+
       <label className="flabel">Tarif</label>
       <select value={tariffId} onChange={e => setTariffId(e.target.value)} className="finput" style={{ marginBottom: 16 }}>
         {tariffs.map(t => <option key={t.id} value={t.id}>{t.name} — {new Intl.NumberFormat('uz-UZ').format(t.pricePerHour)} so'm/soat</option>)}
       </select>
 
-      <label className="flabel">Vaqt</label>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 9 }}>
-        {presets.map(p => (
-          <button
-            key={p}
-            onClick={() => { setMinutes(p); setNoLimit(false); }}
-            style={{
-              padding: '11px 6px', borderRadius: 12,
-              background: (!noLimit && minutes === p) ? 'linear-gradient(135deg,#2563eb,#0ea5e9)' : 'rgba(255,255,255,0.05)',
-              border: '1px solid ' + ((!noLimit && minutes === p) ? 'transparent' : 'rgba(255,255,255,0.09)'),
-              color: '#e5edff', cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit',
-            }}
-          >
-            {p < 60 ? `${p} daq` : `${p / 60} soat`}
-          </button>
-        ))}
-      </div>
-      <input type="number" inputMode="numeric" value={minutes} disabled={noLimit} onChange={e => setMinutes(parseInt(e.target.value) || 0)} className="finput" style={{ marginBottom: 10, opacity: noLimit ? 0.45 : 1 }} />
-
-      <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, marginBottom: 16, cursor: 'pointer' }}>
-        <input type="checkbox" checked={noLimit} onChange={e => setNoLimit(e.target.checked)} style={{ width: 18, height: 18, accentColor: '#0ea5e9' }} />
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 700 }}>Vaqt chegarasiz</div>
-          <div style={{ fontSize: 11, color: '#7f93b8', marginTop: 2 }}>Taymer qo'yilmaydi, faqat hisoblab boradi</div>
+      {!vip ? (
+        <>
+          <label className="flabel">Vaqt</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 9 }}>
+            {presets.map(p => (
+              <button
+                key={p}
+                onClick={() => setMinutes(p)}
+                style={{
+                  padding: '11px 6px', borderRadius: 12,
+                  background: minutes === p ? 'linear-gradient(135deg,#2563eb,#0ea5e9)' : 'rgba(255,255,255,0.05)',
+                  border: '1px solid ' + (minutes === p ? 'transparent' : 'rgba(255,255,255,0.09)'),
+                  color: '#e5edff', cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit',
+                }}
+              >
+                {p < 60 ? `${p} daq` : `${p / 60} soat`}
+              </button>
+            ))}
+          </div>
+          <input type="number" inputMode="numeric" value={minutes} onChange={e => setMinutes(parseInt(e.target.value) || 0)} className="finput" style={{ marginBottom: 10 }} />
+          <div style={{ fontSize: 12, color: '#93a7c9', marginBottom: 16, padding: '0 2px' }}>
+            Taxminiy summa: <strong style={{ color: '#fff' }}>
+              {tariff ? new Intl.NumberFormat('uz-UZ').format(Math.round((minutes / 60) * tariff.pricePerHour)) : 0} so'm
+            </strong>
+          </div>
+        </>
+      ) : (
+        <div style={{ background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.32)', borderRadius: 14, padding: 14, marginBottom: 16, display: 'flex', gap: 11, alignItems: 'flex-start' }}>
+          <Crown size={18} color="#fbbf24" style={{ marginTop: 2, flexShrink: 0 }} />
+          <div style={{ fontSize: 12.5, color: '#fcd34d', lineHeight: 1.55, fontWeight: 500 }}>
+            VIP rejimda aniq vaqt belgilanmaydi. Taymer va summa doimiy hisoblanib boradi, seans "To'xtatish" bosilganda yakunlanadi.
+            {tariff && <div style={{ marginTop: 5, color: '#fff', fontWeight: 700 }}>{new Intl.NumberFormat('uz-UZ').format(tariff.pricePerHour)} so'm / soat</div>}
+          </div>
         </div>
-      </label>
+      )}
 
       <button
-        onClick={() => { if (!tariffId) return; if (noLimit) onStart(tariffId, null); else if (minutes > 0) onStart(tariffId, minutes); }}
-        disabled={!tariffId || (!noLimit && !minutes)}
-        className="btn btn-success wide"
+        onClick={() => { if (!tariffId) return; if (vip) onStart(tariffId, null, true); else if (minutes > 0) onStart(tariffId, minutes, false); }}
+        disabled={!tariffId || (!vip && !minutes)}
+        className={vip ? 'btn btn-warn wide' : 'btn btn-success wide'}
       >
-        <Play size={16} fill="white" /> Boshlash
+        <Play size={16} fill="white" /> {vip ? 'VIP seansni boshlash' : 'Boshlash'}
       </button>
     </div>
   );
