@@ -538,7 +538,8 @@ export default function PlayStationClub() {
         .dev-status { font-size: 12px; font-weight: 700; margin-top: 3px; display: flex; align-items: center; gap: 6px; }
         .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
         .dot.live { background: #4ade80; box-shadow: 0 0 10px #4ade80; }
-        .dev-meta { font-size: 11px; color: #7f93b8; margin-top: 4px; display: flex; align-items: center; gap: 5px; font-weight: 500; }
+        .dev-meta { font-size: 11px; color: #7f93b8; margin-top: 4px; display: flex; align-items: center; gap: 5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .dev-meta-sep { opacity: 0.5; }
         .dev-live { margin-top: 12px; background: rgba(0,0,0,0.36); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 10px 12px; }
         .dev-live-row { display: flex; align-items: baseline; justify-content: space-between; }
         .timer { font-size: 19px; font-weight: 700; color: #6ee7b7; letter-spacing: -0.02em; }
@@ -737,25 +738,25 @@ export default function PlayStationClub() {
           .home-layout .col-side .tad-ico { width: 26px; height: 26px; }
           .home-layout .col-side .tad { padding: 5px 8px; gap: 8px; }
 
-          /* 4 ta qurilmaga mo'ljallangan katta kartalar */
-          .home-layout .dev-grid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, minmax(0,1fr)); height: 100%; gap: 12px; }
-          .home-layout .dev-grid .dev { padding: 13px 15px; border-radius: 18px; justify-content: center; overflow: hidden; min-height: 0; }
-          .home-layout .dev-grid .dev-top { gap: 13px; }
-          .home-layout .dev-grid .screen { width: 58px; height: 43px; border-radius: 9px; }
-          .home-layout .dev-grid .screen svg { width: 24px; height: 24px; }
-          .home-layout .dev-grid .screen-stand { width: 20px; height: 5px; bottom: -6px; }
-          .home-layout .dev-grid .dev-name { font-size: 16.5px; }
-          .home-layout .dev-grid .dev-status { font-size: 12px; margin-top: 3px; }
-          .home-layout .dev-grid .dot { width: 8px; height: 8px; }
-          .home-layout .dev-grid .dev-meta { font-size: 11.5px; margin-top: 3px; }
+          /* 4 ta qurilmaga mo'ljallangan katta kartalar — hammasi bir vaqtda ishlab tursa ham (eng og'ir holat) sig'ishi kerak */
+          .home-layout .dev-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+          .home-layout .dev-grid .dev { padding: 10px 13px; border-radius: 16px; }
+          .home-layout .dev-grid .dev-top { gap: 12px; }
+          .home-layout .dev-grid .screen { width: 52px; height: 39px; border-radius: 8px; }
+          .home-layout .dev-grid .screen svg { width: 21px; height: 21px; }
+          .home-layout .dev-grid .screen-stand { width: 18px; height: 5px; bottom: -6px; }
+          .home-layout .dev-grid .dev-name { font-size: 15.5px; }
+          .home-layout .dev-grid .dev-status { font-size: 11.5px; margin-top: 2px; }
+          .home-layout .dev-grid .dot { width: 7px; height: 7px; }
+          .home-layout .dev-grid .dev-meta { font-size: 11px; margin-top: 2px; }
           .home-layout .dev-grid .vip-tag { font-size: 9.5px; padding: 2px 6px; }
-          .home-layout .dev-grid .dev-live { margin-top: 9px; padding: 8px 11px; border-radius: 11px; }
-          .home-layout .dev-grid .bar { height: 4px; margin-bottom: 6px; border-radius: 100px; }
-          .home-layout .dev-grid .timer { font-size: 18px; }
-          .home-layout .dev-grid .amt { font-size: 14px; }
-          .home-layout .dev-grid .dev-remain { font-size: 10.5px; margin-top: 3px; }
-          .home-layout .dev-grid .dev-btns { gap: 8px; padding-top: 9px; }
-          .home-layout .dev-grid .dev-btns .btn { padding: 9px 8px; font-size: 13px; border-radius: 11px; gap: 6px; }
+          .home-layout .dev-grid .dev-live { margin-top: 6px; padding: 6px 10px; border-radius: 10px; }
+          .home-layout .dev-grid .bar { height: 3px; margin-bottom: 4px; border-radius: 100px; }
+          .home-layout .dev-grid .timer { font-size: 17px; }
+          .home-layout .dev-grid .amt { font-size: 13.5px; }
+          .home-layout .dev-grid .dev-remain { font-size: 10px; margin-top: 2px; }
+          .home-layout .dev-grid .dev-btns { gap: 7px; padding-top: 7px; }
+          .home-layout .dev-grid .dev-btns .btn { padding: 7px 7px; font-size: 12.5px; border-radius: 10px; gap: 5px; }
         }
       `}</style>
 
@@ -1193,9 +1194,10 @@ function DeviceCard({
             <span className="dot" style={{ background: st.color, boxShadow: `0 0 10px ${st.color}` }} />
             {st.text}
           </div>
-          <div className="dev-meta">{tariff ? tariff.name : 'Tarif: —'}</div>
           <div className="dev-meta">
-            {hasTV ? <><Wifi size={11} /> TV ulangan</> : <><WifiOff size={11} /> TV yo'q</>}
+            <span>{tariff ? tariff.name : 'Tarif: —'}</span>
+            <span className="dev-meta-sep">·</span>
+            {hasTV ? <><Wifi size={11} /> TV</> : <><WifiOff size={11} /> TV yo'q</>}
           </div>
         </div>
       </div>
