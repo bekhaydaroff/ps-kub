@@ -739,24 +739,24 @@ export default function PlayStationClub() {
           .home-layout .col-side .tad { padding: 5px 8px; gap: 8px; }
 
           /* 4 ta qurilmaga mo'ljallangan katta kartalar — hammasi bir vaqtda ishlab tursa ham (eng og'ir holat) sig'ishi kerak */
-          .home-layout .dev-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-          .home-layout .dev-grid .dev { padding: 10px 13px; border-radius: 16px; }
-          .home-layout .dev-grid .dev-top { gap: 12px; }
-          .home-layout .dev-grid .screen { width: 52px; height: 39px; border-radius: 8px; }
-          .home-layout .dev-grid .screen svg { width: 21px; height: 21px; }
-          .home-layout .dev-grid .screen-stand { width: 18px; height: 5px; bottom: -6px; }
-          .home-layout .dev-grid .dev-name { font-size: 15.5px; }
-          .home-layout .dev-grid .dev-status { font-size: 11.5px; margin-top: 2px; }
-          .home-layout .dev-grid .dot { width: 7px; height: 7px; }
-          .home-layout .dev-grid .dev-meta { font-size: 11px; margin-top: 2px; }
-          .home-layout .dev-grid .vip-tag { font-size: 9.5px; padding: 2px 6px; }
-          .home-layout .dev-grid .dev-live { margin-top: 6px; padding: 6px 10px; border-radius: 10px; }
-          .home-layout .dev-grid .bar { height: 3px; margin-bottom: 4px; border-radius: 100px; }
-          .home-layout .dev-grid .timer { font-size: 17px; }
-          .home-layout .dev-grid .amt { font-size: 13.5px; }
-          .home-layout .dev-grid .dev-remain { font-size: 10px; margin-top: 2px; }
-          .home-layout .dev-grid .dev-btns { gap: 7px; padding-top: 7px; }
-          .home-layout .dev-grid .dev-btns .btn { padding: 7px 7px; font-size: 12.5px; border-radius: 10px; gap: 5px; }
+          .home-layout .dev-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+          .home-layout .dev-grid .dev { padding: 8px 11px; border-radius: 14px; }
+          .home-layout .dev-grid .dev-top { gap: 9px; }
+          .home-layout .dev-grid .screen { width: 42px; height: 32px; border-radius: 7px; }
+          .home-layout .dev-grid .screen svg { width: 17px; height: 17px; }
+          .home-layout .dev-grid .screen-stand { width: 14px; height: 4px; bottom: -5px; }
+          .home-layout .dev-grid .dev-name { font-size: 13.5px; }
+          .home-layout .dev-grid .dev-status { font-size: 10.5px; margin-top: 1px; }
+          .home-layout .dev-grid .dot { width: 6px; height: 6px; }
+          .home-layout .dev-grid .dev-meta { font-size: 10px; margin-top: 1px; }
+          .home-layout .dev-grid .vip-tag { font-size: 8.5px; padding: 1px 5px; }
+          .home-layout .dev-grid .dev-live { margin-top: 5px; padding: 5px 8px; border-radius: 9px; }
+          .home-layout .dev-grid .bar { height: 3px; margin-bottom: 3px; border-radius: 100px; }
+          .home-layout .dev-grid .timer { font-size: 14.5px; }
+          .home-layout .dev-grid .amt { font-size: 12px; }
+          .home-layout .dev-grid .dev-remain { font-size: 9px; margin-top: 1px; }
+          .home-layout .dev-grid .dev-btns { gap: 6px; padding-top: 6px; }
+          .home-layout .dev-grid .dev-btns .btn { padding: 6px 6px; font-size: 11px; border-radius: 9px; gap: 4px; }
         }
       `}</style>
 
