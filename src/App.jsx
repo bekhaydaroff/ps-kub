@@ -372,140 +372,6 @@ export default function PlayStationClub() {
   }
 
   // ==================== SHARED PIECES ====================
-  const DeviceScreen = ({ status }) => (
-    <div className="screen" data-st={status.key}>
-      <div className="screen-glow" />
-      <Gamepad2 size={26} color="rgba(255,255,255,0.85)" strokeWidth={1.6} />
-      <div className="screen-stand" />
-    </div>
-  );
-
-  const DeviceCard = ({ device, idx }) => {
-    const st = deviceStatus(device);
-    const tariff = tariffs.find(t => t.id === device.tariffId);
-    const remaining = getRemainingTime(device);
-    const elapsedMs = device.running ? Date.now() - device.startTime : 0;
-    const progress = getProgress(device);
-    const hasTV = !!device.tuyaDeviceId;
-
-    return (
-      <div className={`dev st-${st.key} fade-up fade-up-${Math.min(idx + 1, 6)}`}>
-        <div className="dev-top">
-          <DeviceScreen status={st} />
-          <div className="dev-info">
-            <div className="dev-name">
-              {device.name}
-              {device.running && device.vip && <span className="vip-tag">VIP</span>}
-            </div>
-            <div className="dev-status" style={{ color: st.color }}>
-              <span className="dot" style={{ background: st.color, boxShadow: `0 0 10px ${st.color}` }} />
-              {st.text}
-            </div>
-            <div className="dev-meta">{tariff ? tariff.name : 'Tarif: —'}</div>
-            <div className="dev-meta">
-              {hasTV ? <><Wifi size={11} /> TV ulangan</> : <><WifiOff size={11} /> TV yo'q</>}
-            </div>
-          </div>
-        </div>
-
-        {device.running && (
-          <div className="dev-live">
-            {device.scheduledMinutes ? (
-              <div className="bar"><div className="bar-fill" style={{ width: `${progress}%`, background: device.alerted ? 'linear-gradient(90deg,#ef4444,#dc2626)' : 'linear-gradient(90deg,#22c55e,#16a34a)' }} /></div>
-            ) : null}
-            <div className="dev-live-row">
-              <span className="mono timer" style={{ color: device.alerted ? '#fca5a5' : (device.vip ? '#fcd34d' : '#6ee7b7') }}>{formatDuration(elapsedMs)}</span>
-              <span className="amt">{formatShort(getCurrentAmount(device))}</span>
-            </div>
-            <div className="dev-remain mono">
-              {device.alerted ? '⏰ Vaqt tugadi' : (remaining !== null ? `Qolgan: ${formatDuration(Math.max(0, remaining))}` : 'VIP · vaqt chegarasiz')}
-            </div>
-          </div>
-        )}
-
-        <div className="dev-btns">
-          {device.running ? (
-            <>
-              <button className="btn btn-danger" onClick={() => stopDevice(device.id)}><Square size={13} fill="white" /> To'xtatish</button>
-              <button className="btn btn-ghost" onClick={() => setEditingDevice(device)}><Settings size={13} /> Ma'lumot</button>
-            </>
-          ) : (
-            <>
-              <button
-                className="btn btn-success"
-                disabled={device.maintenance}
-                onClick={() => { if (tariffs.length === 0) { alert('Avval tarif qo\'shing!'); return; } setShowTimerSetup(device.id); }}
-              >
-                <Play size={13} fill="white" /> Boshlash
-              </button>
-              <button className="btn btn-ghost" onClick={() => setEditingDevice(device)}><Settings size={13} /> Ma'lumot</button>
-            </>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const TodayActivePanel = () => (
-    <section className="panel">
-      <div className="panel-head">
-        <div className="panel-title"><Activity size={16} color="#60a5fa" /> Bugungi faol qurilmalar</div>
-        <button className="link" onClick={() => setView('stats')}>Barchasi →</button>
-      </div>
-      {todayActiveDevices.length === 0 ? (
-        <div className="empty sm"><Calendar size={22} color="#3b4a6b" /><div>Bugun hali seans bo'lmadi</div></div>
-      ) : (
-        <div className="tad-list">
-          {todayActiveDevices.map(({ device, count, total, ms }) => {
-            const st = deviceStatus(device);
-            return (
-              <div key={device.id} className="tad">
-                <div className="tad-ico" style={{ borderColor: `${st.color}55`, background: `${st.color}18` }}>
-                  <Gamepad2 size={16} color={st.color} />
-                </div>
-                <div className="tad-mid">
-                  <div className="tad-name">
-                    {device.name}
-                    {device.running && <span className="dot live" style={{ marginLeft: 8 }} />}
-                  </div>
-                  <div className="tad-sub">{count} seans · {formatDuration(ms)}</div>
-                </div>
-                <div className="tad-amt">{formatShort(total)}</div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </section>
-  );
-
-  const WeeklyPanel = () => (
-    <section className="panel">
-      <div className="panel-head">
-        <div className="panel-title"><BarChart3 size={16} color="#a78bfa" /> Haftalik statistika</div>
-        <button className="link" onClick={() => setView('stats')}>Barchasi →</button>
-      </div>
-      <div className="chart">
-        {chart.map((c, i) => (
-          <div key={i} className="chart-col" title={`${c.label}: ${formatMoney(c.total)}`}>
-            <div className="chart-val">{c.total > 0 ? formatShort(c.total) : ''}</div>
-            <div className="chart-track">
-              <div
-                className={`chart-bar ${c.isToday ? 'today' : ''}`}
-                style={{ height: `${Math.max(4, (c.total / chartMax) * 100)}%` }}
-              />
-            </div>
-            <div className={`chart-lbl ${c.isToday ? 'today' : ''}`}>{c.short}</div>
-          </div>
-        ))}
-      </div>
-      <div className="chart-foot">
-        <span>Haftalik jami</span>
-        <strong>{formatMoney(stats.week.total)}</strong>
-      </div>
-    </section>
-  );
-
   return (
     <div className="ps-app">
       <style>{`
@@ -570,7 +436,9 @@ export default function PlayStationClub() {
         .page-sub { font-size: 13px; color: #7f93b8; margin-top: 5px; font-weight: 500; }
 
         .layout { display: grid; grid-template-columns: minmax(0,1fr) 360px; gap: 16px; align-items: start; }
+        .layout.home-layout { grid-template-columns: minmax(0,1fr) 270px; }
         .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+        .col-side { gap: 10px; }
         @media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } }
 
         /* ---------- KPI ---------- */
@@ -851,6 +719,14 @@ export default function PlayStationClub() {
           .chart { height: 84px; }
           .kpi-val { font-size: 20px; }
         }
+        @media (min-width: 1101px) {
+          .home-layout .col-side .panel { padding: 10px 11px; }
+          .home-layout .col-side .panel-title { font-size: 13px; }
+          .home-layout .col-side .chart { height: 76px; }
+          .home-layout .col-side .chart-val { display: none; }
+          .home-layout .col-side .tad-ico { width: 26px; height: 26px; }
+          .home-layout .col-side .tad { padding: 5px 8px; gap: 8px; }
+        }
       `}</style>
 
       {/* ============ TOP BAR ============ */}
@@ -916,7 +792,7 @@ export default function PlayStationClub() {
               </div>
             </div>
 
-            <div className="layout fit">
+            <div className="layout fit home-layout">
               <div className="col">
                 <section className="panel grow">
                   <div className="panel-head">
@@ -928,13 +804,22 @@ export default function PlayStationClub() {
                   </div>
                   <div className="scroll">
                     <div className="dev-grid">
-                      {devices.map((d, i) => <DeviceCard key={d.id} device={d} idx={i} />)}
+                      {devices.map((d, i) => (
+                        <DeviceCard
+                          key={d.id} device={d} idx={i} tariffs={tariffs}
+                          deviceStatus={deviceStatus} getRemainingTime={getRemainingTime}
+                          getProgress={getProgress} getCurrentAmount={getCurrentAmount}
+                          formatDuration={formatDuration} formatShort={formatShort}
+                          stopDevice={stopDevice} setEditingDevice={setEditingDevice}
+                          setShowTimerSetup={setShowTimerSetup}
+                        />
+                      ))}
                     </div>
                   </div>
                 </section>
               </div>
 
-              <div className="col">
+              <div className="col col-side">
                 <section className="panel grow">
                   <div className="panel-head">
                     <div className="panel-title"><Activity size={16} color="#60a5fa" /> Bugungi faol qurilmalar</div>
@@ -967,7 +852,7 @@ export default function PlayStationClub() {
                     )}
                   </div>
                 </section>
-                <WeeklyPanel />
+                <WeeklyPanel chart={chart} chartMax={chartMax} formatMoney={formatMoney} formatShort={formatShort} stats={stats} setView={setView} />
               </div>
             </div>
           </>
@@ -986,7 +871,16 @@ export default function PlayStationClub() {
                 <button className="btn btn-primary sm" onClick={() => setShowAddDevice(true)}><Plus size={14} /> Qurilma qo'shish</button>
               </div>
               <div className="dev-grid">
-                {devices.map((d, i) => <DeviceCard key={d.id} device={d} idx={i} />)}
+                {devices.map((d, i) => (
+                  <DeviceCard
+                    key={d.id} device={d} idx={i} tariffs={tariffs}
+                    deviceStatus={deviceStatus} getRemainingTime={getRemainingTime}
+                    getProgress={getProgress} getCurrentAmount={getCurrentAmount}
+                    formatDuration={formatDuration} formatShort={formatShort}
+                    stopDevice={stopDevice} setEditingDevice={setEditingDevice}
+                    setShowTimerSetup={setShowTimerSetup}
+                  />
+                ))}
               </div>
             </section>
           </>
@@ -1109,8 +1003,8 @@ export default function PlayStationClub() {
                 )}
               </div>
               <div className="col">
-                <WeeklyPanel />
-                <TodayActivePanel />
+                <WeeklyPanel chart={chart} chartMax={chartMax} formatMoney={formatMoney} formatShort={formatShort} stats={stats} setView={setView} />
+                <TodayActivePanel todayActiveDevices={todayActiveDevices} deviceStatus={deviceStatus} formatDuration={formatDuration} formatShort={formatShort} setView={setView} />
               </div>
             </div>
           </>
@@ -1232,6 +1126,149 @@ export default function PlayStationClub() {
         </Modal>
       )}
     </div>
+  );
+}
+
+function DeviceScreen({ status }) {
+  return (
+    <div className="screen" data-st={status.key}>
+      <div className="screen-glow" />
+      <Gamepad2 size={26} color="rgba(255,255,255,0.85)" strokeWidth={1.6} />
+      <div className="screen-stand" />
+    </div>
+  );
+}
+
+function DeviceCard({
+  device, idx, tariffs, deviceStatus, getRemainingTime, getProgress, getCurrentAmount,
+  formatDuration, formatShort, stopDevice, setEditingDevice, setShowTimerSetup,
+}) {
+  const st = deviceStatus(device);
+  const tariff = tariffs.find(t => t.id === device.tariffId);
+  const remaining = getRemainingTime(device);
+  const elapsedMs = device.running ? Date.now() - device.startTime : 0;
+  const progress = getProgress(device);
+  const hasTV = !!device.tuyaDeviceId;
+
+  return (
+    <div className={`dev st-${st.key} fade-up fade-up-${Math.min(idx + 1, 6)}`}>
+      <div className="dev-top">
+        <DeviceScreen status={st} />
+        <div className="dev-info">
+          <div className="dev-name">
+            {device.name}
+            {device.running && device.vip && <span className="vip-tag">VIP</span>}
+          </div>
+          <div className="dev-status" style={{ color: st.color }}>
+            <span className="dot" style={{ background: st.color, boxShadow: `0 0 10px ${st.color}` }} />
+            {st.text}
+          </div>
+          <div className="dev-meta">{tariff ? tariff.name : 'Tarif: —'}</div>
+          <div className="dev-meta">
+            {hasTV ? <><Wifi size={11} /> TV ulangan</> : <><WifiOff size={11} /> TV yo'q</>}
+          </div>
+        </div>
+      </div>
+
+      {device.running && (
+        <div className="dev-live">
+          {device.scheduledMinutes ? (
+            <div className="bar"><div className="bar-fill" style={{ width: `${progress}%`, background: device.alerted ? 'linear-gradient(90deg,#ef4444,#dc2626)' : 'linear-gradient(90deg,#22c55e,#16a34a)' }} /></div>
+          ) : null}
+          <div className="dev-live-row">
+            <span className="mono timer" style={{ color: device.alerted ? '#fca5a5' : (device.vip ? '#fcd34d' : '#6ee7b7') }}>{formatDuration(elapsedMs)}</span>
+            <span className="amt">{formatShort(getCurrentAmount(device))}</span>
+          </div>
+          <div className="dev-remain mono">
+            {device.alerted ? '⏰ Vaqt tugadi' : (remaining !== null ? `Qolgan: ${formatDuration(Math.max(0, remaining))}` : 'VIP · vaqt chegarasiz')}
+          </div>
+        </div>
+      )}
+
+      <div className="dev-btns">
+        {device.running ? (
+          <>
+            <button className="btn btn-danger" onClick={() => stopDevice(device.id)}><Square size={13} fill="white" /> To'xtatish</button>
+            <button className="btn btn-ghost" onClick={() => setEditingDevice(device)}><Settings size={13} /> Ma'lumot</button>
+          </>
+        ) : (
+          <>
+            <button
+              className="btn btn-success"
+              disabled={device.maintenance}
+              onClick={() => { if (tariffs.length === 0) { alert('Avval tarif qo\'shing!'); return; } setShowTimerSetup(device.id); }}
+            >
+              <Play size={13} fill="white" /> Boshlash
+            </button>
+            <button className="btn btn-ghost" onClick={() => setEditingDevice(device)}><Settings size={13} /> Ma'lumot</button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TodayActivePanel({ todayActiveDevices, deviceStatus, formatDuration, formatShort, setView }) {
+  return (
+    <section className="panel">
+      <div className="panel-head">
+        <div className="panel-title"><Activity size={16} color="#60a5fa" /> Bugungi faol qurilmalar</div>
+        <button className="link" onClick={() => setView('stats')}>Barchasi →</button>
+      </div>
+      {todayActiveDevices.length === 0 ? (
+        <div className="empty sm"><Calendar size={22} color="#3b4a6b" /><div>Bugun hali seans bo'lmadi</div></div>
+      ) : (
+        <div className="tad-list">
+          {todayActiveDevices.map(({ device, count, total, ms }) => {
+            const st = deviceStatus(device);
+            return (
+              <div key={device.id} className="tad">
+                <div className="tad-ico" style={{ borderColor: `${st.color}55`, background: `${st.color}18` }}>
+                  <Gamepad2 size={16} color={st.color} />
+                </div>
+                <div className="tad-mid">
+                  <div className="tad-name">
+                    {device.name}
+                    {device.running && <span className="dot live" style={{ marginLeft: 8 }} />}
+                  </div>
+                  <div className="tad-sub">{count} seans · {formatDuration(ms)}</div>
+                </div>
+                <div className="tad-amt">{formatShort(total)}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function WeeklyPanel({ chart, chartMax, formatMoney, formatShort, stats, setView }) {
+  return (
+    <section className="panel">
+      <div className="panel-head">
+        <div className="panel-title"><BarChart3 size={16} color="#a78bfa" /> Haftalik statistika</div>
+        <button className="link" onClick={() => setView('stats')}>Barchasi →</button>
+      </div>
+      <div className="chart">
+        {chart.map((c, i) => (
+          <div key={i} className="chart-col" title={`${c.label}: ${formatMoney(c.total)}`}>
+            <div className="chart-val">{c.total > 0 ? formatShort(c.total) : ''}</div>
+            <div className="chart-track">
+              <div
+                className={`chart-bar ${c.isToday ? 'today' : ''}`}
+                style={{ height: `${Math.max(4, (c.total / chartMax) * 100)}%` }}
+              />
+            </div>
+            <div className={`chart-lbl ${c.isToday ? 'today' : ''}`}>{c.short}</div>
+          </div>
+        ))}
+      </div>
+      <div className="chart-foot">
+        <span>Haftalik jami</span>
+        <strong>{formatMoney(stats.week.total)}</strong>
+      </div>
+    </section>
   );
 }
 
