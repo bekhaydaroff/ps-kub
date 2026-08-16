@@ -738,9 +738,11 @@ export default function PlayStationClub() {
           .home-layout .col-side .tad-ico { width: 26px; height: 26px; }
           .home-layout .col-side .tad { padding: 5px 8px; gap: 8px; }
 
-          /* 4 ta qurilmaga mo'ljallangan katta kartalar — hammasi bir vaqtda ishlab tursa ham (eng og'ir holat) sig'ishi kerak */
-          .home-layout .dev-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-          .home-layout .dev-grid .dev { padding: 8px 11px; border-radius: 14px; }
+          /* 4 ta qurilmaga mo'ljallangan katta kartalar — panjara balandligi HAR DOIM mavjud joyga qattiq cheklanadi,
+             shunda seans ochilib karta kattalashganda ham butun sahifa emas, faqat shu panjara ichida joylashadi */
+          .home-layout .dev-grid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, minmax(0,1fr)); height: 100%; gap: 8px; }
+          .home-layout .dev-grid .dev { padding: 8px 11px; border-radius: 14px; display: flex; flex-direction: column; justify-content: center; min-height: 0; overflow: hidden; }
+          .home-layout .dev-grid .dev-btns { margin-top: auto; }
           .home-layout .dev-grid .dev-top { gap: 9px; }
           .home-layout .dev-grid .screen { width: 42px; height: 32px; border-radius: 7px; }
           .home-layout .dev-grid .screen svg { width: 17px; height: 17px; }
