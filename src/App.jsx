@@ -436,7 +436,7 @@ export default function PlayStationClub() {
         .page-sub { font-size: 13px; color: #7f93b8; margin-top: 5px; font-weight: 500; }
 
         .layout { display: grid; grid-template-columns: minmax(0,1fr) 360px; gap: 16px; align-items: start; }
-        .layout.home-layout { grid-template-columns: minmax(0,1fr) 270px; }
+        .layout.home-layout { grid-template-columns: minmax(0,1fr); }
         .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
         .col-side { gap: 10px; }
         @media (max-width: 1100px) {
@@ -497,17 +497,20 @@ export default function PlayStationClub() {
           border-radius: 18px; padding: 14px; position: relative;
           background: linear-gradient(160deg, rgba(12,24,54,0.9), rgba(7,14,34,0.9));
           border: 1px solid rgba(96,165,250,0.22);
-          transition: transform 0.2s, box-shadow 0.2s;
+          transition: transform 0.2s, box-shadow 0.35s ease, border-color 0.35s ease, background 0.35s ease;
         }
         .dev:hover { transform: translateY(-2px); }
         .dev.st-free { border-color: rgba(56,189,248,0.45); box-shadow: 0 0 26px -12px rgba(56,189,248,0.7); }
-        .dev.st-busy { border-color: rgba(74,222,128,0.5); box-shadow: 0 0 30px -12px rgba(74,222,128,0.75); }
+        .dev.st-busy {
+          border-color: rgba(74,222,128,0.85); border-width: 1.5px;
+          box-shadow: 0 0 44px -8px rgba(74,222,128,1);
+        }
         .dev.st-vip {
           border-color: rgba(251,191,36,0.6);
           background: linear-gradient(160deg, rgba(120,53,15,0.45), rgba(7,14,34,0.92));
           box-shadow: 0 0 34px -12px rgba(251,191,36,0.8);
         }
-        .dev.st-busy { background: linear-gradient(160deg, rgba(20,83,45,0.42), rgba(7,14,34,0.92)); }
+        .dev.st-busy { background: linear-gradient(160deg, rgba(21,128,61,0.58), rgba(7,14,34,0.94)); }
         .dev.st-alert {
           background: linear-gradient(160deg, rgba(127,29,29,0.45), rgba(20,8,20,0.9));
           border-color: rgba(248,113,113,0.75);
@@ -527,7 +530,7 @@ export default function PlayStationClub() {
           border: 2px solid rgba(255,255,255,0.16);
           box-shadow: 0 10px 22px -10px rgba(14,165,233,0.85);
         }
-        .screen[data-st="busy"] { background: linear-gradient(160deg,#15803d,#0d9488); box-shadow: 0 10px 22px -10px rgba(34,197,94,0.85); }
+        .screen[data-st="busy"] { background: linear-gradient(160deg,#16a34a,#0d9488); box-shadow: 0 10px 26px -8px rgba(34,197,94,1); }
         .screen[data-st="maint"] { background: linear-gradient(160deg,#9f1239,#a21caf); box-shadow: 0 10px 22px -10px rgba(236,72,153,0.8); }
         .screen[data-st="vip"] { background: linear-gradient(160deg,#b45309,#f59e0b); box-shadow: 0 10px 22px -10px rgba(245,158,11,0.9); }
         .screen[data-st="alert"] { background: linear-gradient(160deg,#b91c1c,#7f1d1d); }
@@ -740,25 +743,25 @@ export default function PlayStationClub() {
 
           /* 4 ta qurilmaga mo'ljallangan katta kartalar — panjara balandligi HAR DOIM mavjud joyga qattiq cheklanadi,
              shunda seans ochilib karta kattalashganda ham butun sahifa emas, faqat shu panjara ichida joylashadi */
-          .home-layout .dev-grid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, minmax(0,1fr)); height: 100%; gap: 8px; }
-          .home-layout .dev-grid .dev { padding: 8px 11px; border-radius: 14px; display: flex; flex-direction: column; justify-content: center; min-height: 0; overflow: hidden; }
+          .home-layout .dev-grid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, minmax(0,1fr)); height: 100%; gap: 10px; }
+          .home-layout .dev-grid .dev { padding: 12px 16px; border-radius: 16px; display: flex; flex-direction: column; justify-content: center; min-height: 0; overflow: hidden; }
           .home-layout .dev-grid .dev-btns { margin-top: auto; }
-          .home-layout .dev-grid .dev-top { gap: 9px; }
-          .home-layout .dev-grid .screen { width: 42px; height: 32px; border-radius: 7px; }
-          .home-layout .dev-grid .screen svg { width: 17px; height: 17px; }
-          .home-layout .dev-grid .screen-stand { width: 14px; height: 4px; bottom: -5px; }
-          .home-layout .dev-grid .dev-name { font-size: 13.5px; }
-          .home-layout .dev-grid .dev-status { font-size: 10.5px; margin-top: 1px; }
-          .home-layout .dev-grid .dot { width: 6px; height: 6px; }
-          .home-layout .dev-grid .dev-meta { font-size: 10px; margin-top: 1px; }
-          .home-layout .dev-grid .vip-tag { font-size: 8.5px; padding: 1px 5px; }
-          .home-layout .dev-grid .dev-live { margin-top: 5px; padding: 5px 8px; border-radius: 9px; }
-          .home-layout .dev-grid .bar { height: 3px; margin-bottom: 3px; border-radius: 100px; }
-          .home-layout .dev-grid .timer { font-size: 14.5px; }
-          .home-layout .dev-grid .amt { font-size: 12px; }
-          .home-layout .dev-grid .dev-remain { font-size: 9px; margin-top: 1px; }
-          .home-layout .dev-grid .dev-btns { gap: 6px; padding-top: 6px; }
-          .home-layout .dev-grid .dev-btns .btn { padding: 6px 6px; font-size: 11px; border-radius: 9px; gap: 4px; }
+          .home-layout .dev-grid .dev-top { gap: 14px; }
+          .home-layout .dev-grid .screen { width: 76px; height: 58px; border-radius: 12px; }
+          .home-layout .dev-grid .screen svg { width: 32px; height: 32px; }
+          .home-layout .dev-grid .screen-stand { width: 22px; height: 5px; bottom: -6px; }
+          .home-layout .dev-grid .dev-name { font-size: 16px; }
+          .home-layout .dev-grid .dev-status { font-size: 12px; margin-top: 2px; }
+          .home-layout .dev-grid .dot { width: 7px; height: 7px; }
+          .home-layout .dev-grid .dev-meta { font-size: 11px; margin-top: 2px; }
+          .home-layout .dev-grid .vip-tag { font-size: 9px; padding: 2px 6px; }
+          .home-layout .dev-grid .dev-live { margin-top: 8px; padding: 7px 10px; border-radius: 10px; }
+          .home-layout .dev-grid .bar { height: 4px; margin-bottom: 5px; border-radius: 100px; }
+          .home-layout .dev-grid .timer { font-size: 16px; }
+          .home-layout .dev-grid .amt { font-size: 13px; }
+          .home-layout .dev-grid .dev-remain { font-size: 10px; margin-top: 2px; }
+          .home-layout .dev-grid .dev-btns { gap: 8px; padding-top: 8px; }
+          .home-layout .dev-grid .dev-btns .btn { padding: 7px 8px; font-size: 12px; border-radius: 9px; gap: 5px; }
         }
       `}</style>
 
@@ -850,42 +853,6 @@ export default function PlayStationClub() {
                     </div>
                   </div>
                 </section>
-              </div>
-
-              <div className="col col-side">
-                <section className="panel grow">
-                  <div className="panel-head">
-                    <div className="panel-title"><Activity size={16} color="#60a5fa" /> Bugungi faol qurilmalar</div>
-                    <button className="link" onClick={() => setView('stats')}>Barchasi →</button>
-                  </div>
-                  <div className="scroll">
-                    {todayActiveDevices.length === 0 ? (
-                      <div className="empty sm"><Calendar size={22} color="#3b4a6b" /><div>Bugun hali seans bo'lmadi</div></div>
-                    ) : (
-                      <div className="tad-list">
-                        {todayActiveDevices.map(({ device, count, total, ms }) => {
-                          const st = deviceStatus(device);
-                          return (
-                            <div key={device.id} className="tad">
-                              <div className="tad-ico" style={{ borderColor: `${st.color}55`, background: `${st.color}18` }}>
-                                <Gamepad2 size={16} color={st.color} />
-                              </div>
-                              <div className="tad-mid">
-                                <div className="tad-name">
-                                  {device.name}
-                                  {device.running && <span className="dot live" style={{ marginLeft: 8 }} />}
-                                </div>
-                                <div className="tad-sub">{count} ta seans · {formatDuration(ms)}</div>
-                              </div>
-                              <div className="tad-amt">{formatShort(total)}</div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </section>
-                <WeeklyPanel chart={chart} chartMax={chartMax} formatMoney={formatMoney} formatShort={formatShort} stats={stats} setView={setView} />
               </div>
             </div>
           </>
