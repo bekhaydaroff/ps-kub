@@ -760,13 +760,13 @@ export default function PlayStationClub() {
           .home-layout .dev-grid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, minmax(0,1fr)); height: 100%; gap: 10px; }
           .home-layout .dev-grid .dev { padding: 12px 16px; border-radius: 16px; display: flex; flex-direction: column; justify-content: center; min-height: 0; overflow: hidden; }
           .home-layout .dev-grid .dev-btns { margin-top: auto; }
-          .home-layout .dev-grid .dev-top { gap: 14px; }
-          .home-layout .dev-grid .screen { width: 76px; height: 58px; border-radius: 12px; }
-          .home-layout .dev-grid .screen-stand { width: 22px; height: 5px; bottom: -6px; }
-          .home-layout .dev-grid .dev-name { font-size: 16px; }
-          .home-layout .dev-grid .dev-status { font-size: 12px; margin-top: 2px; }
-          .home-layout .dev-grid .dot { width: 7px; height: 7px; }
-          .home-layout .dev-grid .dev-meta { font-size: 11px; margin-top: 2px; }
+          .home-layout .dev-grid .dev-top { gap: 20px; }
+          .home-layout .dev-grid .screen { width: 140px; height: 108px; border-radius: 18px; }
+          .home-layout .dev-grid .screen-stand { display: none; }
+          .home-layout .dev-grid .dev-name { font-size: 19px; }
+          .home-layout .dev-grid .dev-status { font-size: 13px; margin-top: 3px; }
+          .home-layout .dev-grid .dot { width: 8px; height: 8px; }
+          .home-layout .dev-grid .dev-meta { font-size: 12px; margin-top: 3px; }
           .home-layout .dev-grid .vip-tag { font-size: 9px; padding: 2px 6px; }
           .home-layout .dev-grid .dev-live { margin-top: 8px; padding: 7px 10px; border-radius: 10px; }
           .home-layout .dev-grid .bar { height: 4px; margin-bottom: 5px; border-radius: 100px; }
