@@ -532,9 +532,8 @@ export default function PlayStationClub() {
           transition: background 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
           overflow: hidden;
         }
-        .screen-ico { width: 100%; height: 100%; padding: 8%; box-sizing: border-box; transition: transform 0.35s ease; }
-        .screen[data-st="busy"] { background: #22c55e; box-shadow: 0 10px 26px -8px rgba(34,197,94,1); border-color: rgba(255,255,255,0.3); }
-        .screen[data-st="busy"] .screen-ico { transform: scale(1.04); }
+        .screen-ico { width: 100%; height: 100%; padding: 0; box-sizing: border-box; transform: scale(1.4); transition: transform 0.35s ease; }
+        .screen[data-st="busy"] { background: #22c55e !important; box-shadow: 0 10px 26px -8px rgba(34,197,94,1); border-color: rgba(255,255,255,0.3); }
         .screen[data-st="maint"] { background: #ec4899; box-shadow: 0 10px 22px -10px rgba(236,72,153,0.8); }
         .screen[data-st="vip"] { background: #f59e0b; box-shadow: 0 10px 22px -10px rgba(245,158,11,0.9); }
         .screen[data-st="alert"] { background: #ef4444; box-shadow: 0 10px 22px -10px rgba(239,68,68,0.9); }
