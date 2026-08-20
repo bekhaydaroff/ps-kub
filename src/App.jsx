@@ -525,20 +525,20 @@ export default function PlayStationClub() {
         .dev-top { display: flex; gap: 12px; }
         .screen {
           width: 84px; height: 62px; border-radius: 9px; flex-shrink: 0; position: relative;
-          background: linear-gradient(160deg,#1e40af,#0891b2);
+          background: #0ea5e9;
           display: flex; align-items: center; justify-content: center;
           border: 2px solid rgba(255,255,255,0.16);
           box-shadow: 0 10px 22px -10px rgba(14,165,233,0.85);
           transition: background 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
           overflow: hidden;
         }
-        .screen-ico { width: 72%; height: 72%; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.35)); transition: transform 0.35s ease; }
-        .screen[data-st="busy"] { background: linear-gradient(160deg,#16a34a,#0d9488); box-shadow: 0 10px 26px -8px rgba(34,197,94,1); border-color: rgba(255,255,255,0.3); }
-        .screen[data-st="busy"] .screen-ico { transform: scale(1.06); }
-        .screen[data-st="maint"] { background: linear-gradient(160deg,#9f1239,#a21caf); box-shadow: 0 10px 22px -10px rgba(236,72,153,0.8); }
-        .screen[data-st="vip"] { background: linear-gradient(160deg,#b45309,#f59e0b); box-shadow: 0 10px 22px -10px rgba(245,158,11,0.9); }
-        .screen[data-st="alert"] { background: linear-gradient(160deg,#b91c1c,#7f1d1d); }
-        .screen-glow { position: absolute; inset: 0; border-radius: 7px; background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.28), transparent 65%); pointer-events: none; }
+        .screen-ico { width: 100%; height: 100%; padding: 8%; box-sizing: border-box; transition: transform 0.35s ease; }
+        .screen[data-st="busy"] { background: #22c55e; box-shadow: 0 10px 26px -8px rgba(34,197,94,1); border-color: rgba(255,255,255,0.3); }
+        .screen[data-st="busy"] .screen-ico { transform: scale(1.04); }
+        .screen[data-st="maint"] { background: #ec4899; box-shadow: 0 10px 22px -10px rgba(236,72,153,0.8); }
+        .screen[data-st="vip"] { background: #f59e0b; box-shadow: 0 10px 22px -10px rgba(245,158,11,0.9); }
+        .screen[data-st="alert"] { background: #ef4444; box-shadow: 0 10px 22px -10px rgba(239,68,68,0.9); }
+        .screen-glow { display: none; }
         .screen-stand { position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); width: 26px; height: 6px; border-radius: 0 0 5px 5px; background: rgba(255,255,255,0.18); }
         .dev-info { min-width: 0; flex: 1; }
         .dev-name { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; }
