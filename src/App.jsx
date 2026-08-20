@@ -755,13 +755,13 @@ export default function PlayStationClub() {
           .home-layout .col-side .tad-ico { width: 26px; height: 26px; }
           .home-layout .col-side .tad { padding: 5px 8px; gap: 8px; }
 
-          /* 4 ta qurilmaga mo'ljallangan katta kartalar — panjara balandligi HAR DOIM mavjud joyga qattiq cheklanadi,
-             shunda seans ochilib karta kattalashganda ham butun sahifa emas, faqat shu panjara ichida joylashadi */
-          .home-layout .dev-grid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, minmax(0,1fr)); height: 100%; gap: 10px; }
-          .home-layout .dev-grid .dev { padding: 12px 16px; border-radius: 16px; display: flex; flex-direction: column; justify-content: center; min-height: 0; overflow: hidden; }
+          /* 4 ta qurilmaga mo'ljallangan katta kartalar — ikonka va tugmalar kattalashtirilgani uchun
+             endi panjara balandligi kontentga qarab o'sishi mumkin, panel ichida scroll bo'ladi */
+          .home-layout .dev-grid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, auto); gap: 10px; }
+          .home-layout .dev-grid .dev { padding: 12px 16px; border-radius: 16px; display: flex; flex-direction: column; justify-content: center; }
           .home-layout .dev-grid .dev-btns { margin-top: auto; }
           .home-layout .dev-grid .dev-top { gap: 20px; }
-          .home-layout .dev-grid .screen { width: 140px; height: 108px; border-radius: 18px; }
+          .home-layout .dev-grid .screen { width: 420px; height: 324px; border-radius: 30px; }
           .home-layout .dev-grid .screen-stand { display: none; }
           .home-layout .dev-grid .dev-name { font-size: 19px; }
           .home-layout .dev-grid .dev-status { font-size: 13px; margin-top: 3px; }
@@ -774,7 +774,7 @@ export default function PlayStationClub() {
           .home-layout .dev-grid .amt { font-size: 13px; }
           .home-layout .dev-grid .dev-remain { font-size: 10px; margin-top: 2px; }
           .home-layout .dev-grid .dev-btns { gap: 8px; padding-top: 8px; }
-          .home-layout .dev-grid .dev-btns .btn { padding: 12px 10px; font-size: 14px; border-radius: 11px; gap: 7px; }
+          .home-layout .dev-grid .dev-btns .btn { padding: 24px 20px; font-size: 28px; border-radius: 11px; gap: 7px; }
           .home-layout .dev-grid .dev-info-btn { width: 28px; height: 28px; top: 10px; right: 10px; }
         }
       `}</style>
