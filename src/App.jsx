@@ -529,12 +529,16 @@ export default function PlayStationClub() {
           display: flex; align-items: center; justify-content: center;
           border: 2px solid rgba(255,255,255,0.16);
           box-shadow: 0 10px 22px -10px rgba(14,165,233,0.85);
+          transition: background 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+          overflow: hidden;
         }
-        .screen[data-st="busy"] { background: linear-gradient(160deg,#16a34a,#0d9488); box-shadow: 0 10px 26px -8px rgba(34,197,94,1); }
+        .screen-ico { width: 72%; height: 72%; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.35)); transition: transform 0.35s ease; }
+        .screen[data-st="busy"] { background: linear-gradient(160deg,#16a34a,#0d9488); box-shadow: 0 10px 26px -8px rgba(34,197,94,1); border-color: rgba(255,255,255,0.3); }
+        .screen[data-st="busy"] .screen-ico { transform: scale(1.06); }
         .screen[data-st="maint"] { background: linear-gradient(160deg,#9f1239,#a21caf); box-shadow: 0 10px 22px -10px rgba(236,72,153,0.8); }
         .screen[data-st="vip"] { background: linear-gradient(160deg,#b45309,#f59e0b); box-shadow: 0 10px 22px -10px rgba(245,158,11,0.9); }
         .screen[data-st="alert"] { background: linear-gradient(160deg,#b91c1c,#7f1d1d); }
-        .screen-glow { position: absolute; inset: 0; border-radius: 7px; background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.28), transparent 65%); }
+        .screen-glow { position: absolute; inset: 0; border-radius: 7px; background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.28), transparent 65%); pointer-events: none; }
         .screen-stand { position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); width: 26px; height: 6px; border-radius: 0 0 5px 5px; background: rgba(255,255,255,0.18); }
         .dev-info { min-width: 0; flex: 1; }
         .dev-name { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; }
@@ -748,7 +752,6 @@ export default function PlayStationClub() {
           .home-layout .dev-grid .dev-btns { margin-top: auto; }
           .home-layout .dev-grid .dev-top { gap: 14px; }
           .home-layout .dev-grid .screen { width: 76px; height: 58px; border-radius: 12px; }
-          .home-layout .dev-grid .screen svg { width: 32px; height: 32px; }
           .home-layout .dev-grid .screen-stand { width: 22px; height: 5px; bottom: -6px; }
           .home-layout .dev-grid .dev-name { font-size: 16px; }
           .home-layout .dev-grid .dev-status { font-size: 12px; margin-top: 2px; }
@@ -1133,7 +1136,7 @@ function DeviceScreen({ status }) {
   return (
     <div className="screen" data-st={status.key}>
       <div className="screen-glow" />
-      <Gamepad2 size={26} color="rgba(255,255,255,0.85)" strokeWidth={1.6} />
+      <Gamepad2 className="screen-ico" color="#fff" strokeWidth={1.5} />
       <div className="screen-stand" />
     </div>
   );
