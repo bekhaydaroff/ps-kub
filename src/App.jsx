@@ -539,7 +539,7 @@ export default function PlayStationClub() {
         .screen[data-st="alert"] { background: #ef4444; box-shadow: 0 10px 22px -10px rgba(239,68,68,0.9); }
         .screen-glow { display: none; }
         .screen-stand { position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); width: 26px; height: 6px; border-radius: 0 0 5px 5px; background: rgba(255,255,255,0.18); }
-        .dev-info { min-width: 0; flex: 1; }
+        .dev-info { min-width: 0; flex: 1; padding-right: 34px; }
         .dev-name { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; }
         .dev-status { font-size: 12px; font-weight: 700; margin-top: 3px; display: flex; align-items: center; gap: 6px; }
         .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
@@ -553,7 +553,17 @@ export default function PlayStationClub() {
         .dev-remain { font-size: 11px; color: #93c5fd; margin-top: 4px; font-weight: 600; }
         .bar { height: 4px; background: rgba(255,255,255,0.08); border-radius: 100px; overflow: hidden; margin-bottom: 8px; }
         .bar-fill { height: 100%; transition: width 0.4s; }
-        .dev-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+        .dev-btns { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 12px; }
+        .dev-info-btn {
+          position: absolute; top: 12px; right: 12px; z-index: 2;
+          width: 30px; height: 30px; border-radius: 9px;
+          background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+          color: #9db4dd; cursor: pointer; display: flex; align-items: center; justify-content: center;
+          transition: background 0.2s, color 0.2s, transform 0.15s;
+        }
+        .dev-info-btn:hover { background: rgba(96,165,250,0.18); color: #bfdbfe; }
+        .dev-info-btn:active { transform: scale(0.93); }
+        .btn-lg { padding: 15px 14px; font-size: 15px; border-radius: 14px; gap: 9px; }
 
         /* ---------- ACTIVE ---------- */
         .act-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
@@ -720,7 +730,8 @@ export default function PlayStationClub() {
           .dev-remain { font-size: 9.5px; margin-top: 1px; }
           .bar { height: 3px; margin-bottom: 6px; }
           .dev-btns { margin-top: 7px; gap: 6px; }
-          .dev-btns .btn { padding: 6px 5px; font-size: 11.5px; border-radius: 9px; gap: 5px; }
+          .dev-btns .btn { padding: 11px 8px; font-size: 13px; border-radius: 10px; gap: 6px; }
+          .dev-info-btn { width: 27px; height: 27px; top: 9px; right: 9px; }
           .tad { padding: 6px 9px; border-radius: 11px; }
           .tad-ico { width: 29px; height: 29px; border-radius: 9px; }
           .tad-name { font-size: 12.5px; }
@@ -763,7 +774,8 @@ export default function PlayStationClub() {
           .home-layout .dev-grid .amt { font-size: 13px; }
           .home-layout .dev-grid .dev-remain { font-size: 10px; margin-top: 2px; }
           .home-layout .dev-grid .dev-btns { gap: 8px; padding-top: 8px; }
-          .home-layout .dev-grid .dev-btns .btn { padding: 7px 8px; font-size: 12px; border-radius: 9px; gap: 5px; }
+          .home-layout .dev-grid .dev-btns .btn { padding: 12px 10px; font-size: 14px; border-radius: 11px; gap: 7px; }
+          .home-layout .dev-grid .dev-info-btn { width: 28px; height: 28px; top: 10px; right: 10px; }
         }
       `}</style>
 
@@ -1154,6 +1166,9 @@ function DeviceCard({
 
   return (
     <div className={`dev st-${st.key} fade-up fade-up-${Math.min(idx + 1, 6)}`}>
+      <button className="dev-info-btn" onClick={() => setEditingDevice(device)} title="Ma'lumot">
+        <Settings size={15} />
+      </button>
       <div className="dev-top">
         <DeviceScreen status={st} />
         <div className="dev-info">
@@ -1190,21 +1205,15 @@ function DeviceCard({
 
       <div className="dev-btns">
         {device.running ? (
-          <>
-            <button className="btn btn-danger" onClick={() => stopDevice(device.id)}><Square size={13} fill="white" /> To'xtatish</button>
-            <button className="btn btn-ghost" onClick={() => setEditingDevice(device)}><Settings size={13} /> Ma'lumot</button>
-          </>
+          <button className="btn btn-danger btn-lg" onClick={() => stopDevice(device.id)}><Square size={16} fill="white" /> To'xtatish</button>
         ) : (
-          <>
-            <button
-              className="btn btn-success"
-              disabled={device.maintenance}
-              onClick={() => { if (tariffs.length === 0) { alert('Avval tarif qo\'shing!'); return; } setShowTimerSetup(device.id); }}
-            >
-              <Play size={13} fill="white" /> Boshlash
-            </button>
-            <button className="btn btn-ghost" onClick={() => setEditingDevice(device)}><Settings size={13} /> Ma'lumot</button>
-          </>
+          <button
+            className="btn btn-success btn-lg"
+            disabled={device.maintenance}
+            onClick={() => { if (tariffs.length === 0) { alert('Avval tarif qo\'shing!'); return; } setShowTimerSetup(device.id); }}
+          >
+            <Play size={16} fill="white" /> Boshlash
+          </button>
         )}
       </div>
     </div>
