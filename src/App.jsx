@@ -783,25 +783,25 @@ export default function PlayStationClub() {
 
           /* 4 ta qurilmaga mo'ljallangan katta kartalar — ikonka va tugmalar kattalashtirilgani uchun
              endi panjara balandligi kontentga qarab o'sishi mumkin, panel ichida scroll bo'ladi */
-          .home-layout .dev-grid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, auto); gap: 10px; }
-          .home-layout .dev-grid .dev { padding: 12px 16px; border-radius: 16px; display: flex; flex-direction: column; justify-content: center; }
+          .home-layout .dev-grid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); gap: 10px; height: 100%; }
+          .home-layout .dev-grid .dev { padding: 10px 14px; border-radius: 16px; display: flex; flex-direction: column; justify-content: center; min-height: 0; }
           .home-layout .dev-grid .dev-btns { margin-top: auto; }
-          .home-layout .dev-grid .dev-top { gap: 20px; }
-          .home-layout .dev-grid .screen { width: 420px; height: 324px; border-radius: 30px; }
+          .home-layout .dev-grid .dev-top { gap: 12px; }
+          .home-layout .dev-grid .screen { width: 68px; height: 51px; border-radius: 10px; }
           .home-layout .dev-grid .screen-stand { display: none; }
-          .home-layout .dev-grid .dev-name { font-size: 19px; }
-          .home-layout .dev-grid .dev-status { font-size: 13px; margin-top: 3px; }
-          .home-layout .dev-grid .dot { width: 8px; height: 8px; }
-          .home-layout .dev-grid .dev-meta { font-size: 12px; margin-top: 3px; }
+          .home-layout .dev-grid .dev-name { font-size: 15px; }
+          .home-layout .dev-grid .dev-status { font-size: 11.5px; margin-top: 2px; }
+          .home-layout .dev-grid .dot { width: 7px; height: 7px; }
+          .home-layout .dev-grid .dev-meta { font-size: 11px; margin-top: 2px; }
           .home-layout .dev-grid .vip-tag { font-size: 9px; padding: 2px 6px; }
-          .home-layout .dev-grid .dev-live { margin-top: 8px; padding: 7px 10px; border-radius: 10px; }
+          .home-layout .dev-grid .dev-live { margin-top: 6px; padding: 6px 9px; border-radius: 10px; }
           .home-layout .dev-grid .bar { height: 4px; margin-bottom: 5px; border-radius: 100px; }
-          .home-layout .dev-grid .timer { font-size: 16px; }
-          .home-layout .dev-grid .amt { font-size: 13px; }
+          .home-layout .dev-grid .timer { font-size: 15px; }
+          .home-layout .dev-grid .amt { font-size: 12.5px; }
           .home-layout .dev-grid .dev-remain { font-size: 10px; margin-top: 2px; }
-          .home-layout .dev-grid .dev-btns { gap: 8px; padding-top: 8px; }
-          .home-layout .dev-grid .dev-btns .btn { padding: 24px 20px; font-size: 28px; border-radius: 11px; gap: 7px; }
-          .home-layout .dev-grid .dev-info-btn { width: 28px; height: 28px; top: 10px; right: 10px; }
+          .home-layout .dev-grid .dev-btns { gap: 8px; padding-top: 6px; }
+          .home-layout .dev-grid .dev-btns .btn { padding: 11px 14px; font-size: 14px; border-radius: 11px; gap: 7px; }
+          .home-layout .dev-grid .dev-info-btn { width: 26px; height: 26px; top: 9px; right: 9px; }
         }
       `}</style>
 
