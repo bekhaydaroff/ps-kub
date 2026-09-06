@@ -5,6 +5,9 @@ import {
   Wallet, Users, Home, Wrench, Timer, Crown, CheckCircle2, LayoutGrid,
 } from 'lucide-react';
 
+// Har bir ochilgan vaqtga qo'shiladigan bepul bonus daqiqa (barcha tarif va VIP uchun)
+const BONUS_MINUTES = 10;
+
 const storage = {
   get: (key) => {
     try {
@@ -66,12 +69,12 @@ export default function PlayStationClub() {
   useEffect(() => {
     const sd = storage.get('ps_devices');
     if (sd && Array.isArray(sd) && sd.length > 0) {
-      setDevices(sd.map(d => ({ tuyaDeviceId: '', tvAutoControl: true, maintenance: false, vip: false, ...d })));
+      setDevices(sd.map(d => ({ tuyaDeviceId: '', tvAutoControl: true, maintenance: false, vip: false, bookedMinutes: null, ...d })));
     } else {
       const initial = Array.from({ length: 4 }, (_, i) => ({
         id: `dev_${Date.now()}_${i}`, name: `PS ${i + 1}`,
         running: false, startTime: null, tariffId: null,
-        scheduledMinutes: null, alerted: false,
+        scheduledMinutes: null, bookedMinutes: null, alerted: false,
         tuyaDeviceId: '', tvAutoControl: true, maintenance: false, vip: false,
       }));
       setDevices(initial);
@@ -164,7 +167,11 @@ export default function PlayStationClub() {
     }
     const updated = devices.map(d => d.id === deviceId ? {
       ...d, running: true, startTime: Date.now(), tariffId,
-      scheduledMinutes: vip ? null : minutes, alerted: false, vip,
+      // Mijoz tanlagan (to'lanadigan) vaqt bookedMinutes'da saqlanadi,
+      // scheduledMinutes esa +BONUS_MINUTES qo'shilgan holda taymer/signal/TV o'chirish uchun ishlatiladi.
+      bookedMinutes: vip ? null : minutes,
+      scheduledMinutes: vip ? null : minutes + BONUS_MINUTES,
+      alerted: false, vip,
     } : d);
     saveDevices(updated);
 
@@ -180,8 +187,21 @@ export default function PlayStationClub() {
     if (!tariff) return;
 
     const elapsedMs = Date.now() - device.startTime;
-    const elapsedHours = elapsedMs / (1000 * 60 * 60);
-    const amount = Math.round(elapsedHours * tariff.pricePerHour);
+    const bonusMs = BONUS_MINUTES * 60 * 1000;
+
+    // Bonus 10 daqiqa BEPUL: oddiy/vaqtli seansda to'lov faqat bron qilingan
+    // (bookedMinutes) vaqt asosida hisoblanadi — bonus vaqti to'lovga qo'shilmaydi.
+    // VIP seansda esa yakuniy hisoblangan summadan 10 daqiqalik narx ayiriladi.
+    let billedMs;
+    if (device.vip) {
+      billedMs = Math.max(0, elapsedMs - bonusMs);
+    } else if (device.bookedMinutes) {
+      billedMs = Math.min(elapsedMs, device.bookedMinutes * 60 * 1000);
+    } else {
+      billedMs = elapsedMs;
+    }
+    const billedHours = billedMs / (1000 * 60 * 60);
+    const amount = Math.round(billedHours * tariff.pricePerHour);
 
     const session = {
       id: `s_${Date.now()}`, deviceId, deviceName: device.name,
@@ -193,7 +213,7 @@ export default function PlayStationClub() {
 
     const updated = devices.map(d => d.id === deviceId ? {
       ...d, running: false, startTime: null, tariffId: null,
-      scheduledMinutes: null, alerted: false, vip: false,
+      scheduledMinutes: null, bookedMinutes: null, alerted: false, vip: false,
     } : d);
     saveDevices(updated);
 
@@ -263,7 +283,13 @@ export default function PlayStationClub() {
     if (!d.running) return 0;
     const t = tariffs.find(x => x.id === d.tariffId);
     if (!t) return 0;
-    return Math.round(((Date.now() - d.startTime) / 3600000) * t.pricePerHour);
+    const elapsedMs = Date.now() - d.startTime;
+    const bonusMs = BONUS_MINUTES * 60000;
+    let billedMs;
+    if (d.vip) billedMs = Math.max(0, elapsedMs - bonusMs);
+    else if (d.bookedMinutes) billedMs = Math.min(elapsedMs, d.bookedMinutes * 60000);
+    else billedMs = elapsedMs;
+    return Math.round((billedMs / 3600000) * t.pricePerHour);
   };
   const getRemainingTime = (d) => {
     if (!d.running || !d.scheduledMinutes) return null;
@@ -1380,10 +1406,13 @@ function TimerSetupForm({ tariffs, onStart }) {
             ))}
           </div>
           <input type="number" inputMode="numeric" value={minutes} onChange={e => setMinutes(parseInt(e.target.value) || 0)} className="finput" style={{ marginBottom: 10 }} />
-          <div style={{ fontSize: 12, color: '#93a7c9', marginBottom: 16, padding: '0 2px' }}>
+          <div style={{ fontSize: 12, color: '#93a7c9', marginBottom: 4, padding: '0 2px' }}>
             Taxminiy summa: <strong style={{ color: '#fff' }}>
               {tariff ? new Intl.NumberFormat('uz-UZ').format(Math.round((minutes / 60) * tariff.pricePerHour)) : 0} so'm
             </strong>
+          </div>
+          <div style={{ fontSize: 11.5, color: '#6ee7b7', marginBottom: 16, padding: '0 2px', fontWeight: 600 }}>
+            🎁 +{BONUS_MINUTES} daqiqa bonus qo'shiladi — jami {minutes + BONUS_MINUTES} daqiqa o'ynaydi, to'lov {minutes} daqiqa uchun.
           </div>
         </>
       ) : (
