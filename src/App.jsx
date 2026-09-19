@@ -59,6 +59,7 @@ export default function PlayStationClub() {
   const [showAddTariff, setShowAddTariff] = useState(false);
   const [showTimerSetup, setShowTimerSetup] = useState(null);
   const [showCompleteSession, setShowCompleteSession] = useState(null);
+  const [showResetStats, setShowResetStats] = useState(false);
   const [editingTariff, setEditingTariff] = useState(null);
   const [editingDevice, setEditingDevice] = useState(null);
   const [loaded, setLoaded] = useState(false);
@@ -103,6 +104,8 @@ export default function PlayStationClub() {
   const saveDevices = (n) => { setDevices(n); storage.set('ps_devices', n); };
   const saveTariffs = (n) => { setTariffs(n); storage.set('ps_tariffs', n); };
   const saveSessions = (n) => { setSessions(n); storage.set('ps_sessions', n); };
+  // Hisobotni 0 qilish: faqat seanslar tarixi o'chadi, qurilmalar va tariflar joyida qoladi
+  const resetStats = () => { saveSessions([]); setShowResetStats(false); };
 
   const requestNotifications = async () => {
     if (!('Notification' in window)) {
@@ -1207,6 +1210,15 @@ export default function PlayStationClub() {
                     <div className="tad"><div className="tad-mid"><div className="tad-name">Jami seanslar</div></div><div className="tad-amt">{sessions.length} ta</div></div>
                   </div>
                 </section>
+                <section className="panel">
+                  <div className="panel-head"><div className="panel-title"><BarChart3 size={16} color="#f87171" /> Hisobot ma'lumotlari</div></div>
+                  <div style={{ fontSize: 12, color: '#7f93b8', marginBottom: 12, lineHeight: 1.55 }}>
+                    Barcha seanslar tarixi va daromad hisobotini 0 qiladi. Qurilmalar, tariflar va TV sozlamalari o'chmaydi.
+                  </div>
+                  <button className="btn btn-danger wide" onClick={() => setShowResetStats(true)}>
+                    <Trash2 size={15} /> Hisobotni 0 qilish
+                  </button>
+                </section>
               </div>
             </div>
           </>
@@ -1240,6 +1252,34 @@ export default function PlayStationClub() {
       {editingDevice && (
         <Modal onClose={() => setEditingDevice(null)} title={`${editingDevice.name} sozlamalari`}>
           <DeviceSettingsForm device={editingDevice} onSave={(updates) => { updateDevice(editingDevice.id, updates); setEditingDevice(null); }} />
+        </Modal>
+      )}
+
+      {showResetStats && (
+        <Modal onClose={() => setShowResetStats(false)} title="Hisobotni 0 qilish">
+          {runningDevices.length > 0 ? (
+            <div>
+              <div style={{ padding: 13, background: 'rgba(251,191,36,0.10)', border: '1px solid rgba(251,191,36,0.32)', borderRadius: 14, color: '#fcd34d', fontSize: 13, lineHeight: 1.55, marginBottom: 16, fontWeight: 600 }}>
+                Hozir {runningDevices.length} ta seans ishlayapti. Avval ularni "To'xtatish" bilan yoping, keyin hisobotni 0 qiling.
+              </div>
+              <button className="btn btn-ghost wide" onClick={() => setShowResetStats(false)}>Tushunarli</button>
+            </div>
+          ) : (
+            <div>
+              <div style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 16, padding: '16px 14px', marginBottom: 14, textAlign: 'center' }}>
+                <div style={{ fontSize: 12, color: '#fca5a5', marginBottom: 6, fontWeight: 600 }}>O'chiriladi</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>{sessions.length} ta seans</div>
+                <div style={{ fontSize: 14, color: '#fca5a5', marginTop: 4, fontWeight: 700 }}>{formatMoney(stats.all.total)}</div>
+              </div>
+              <div style={{ fontSize: 12, color: '#93a7c9', marginBottom: 16, lineHeight: 1.55 }}>
+                Bu amalni qaytarib bo'lmaydi. Qurilmalar va tariflar saqlanib qoladi.
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9 }}>
+                <button className="btn btn-ghost" onClick={() => setShowResetStats(false)}>Bekor qilish</button>
+                <button className="btn btn-danger" onClick={resetStats}>Ha, 0 qilish</button>
+              </div>
+            </div>
+          )}
         </Modal>
       )}
 
