@@ -465,18 +465,22 @@ export default function PlayStationClub() {
         .layout.home-layout { grid-template-columns: minmax(0,1fr); }
         .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
         .col-side { gap: 10px; }
-        @media (max-width: 1100px) {
+        @media (max-width: 899px) {
           .layout { grid-template-columns: 1fr; }
           .layout.home-layout { grid-template-columns: 1fr; }
           .home-layout .dev-grid { grid-template-columns: repeat(2, 1fr); }
         }
-        @media (min-width: 1101px) {
+        @media (min-width: 900px) {
           .layout.fit { grid-template-rows: minmax(0,1fr); align-items: stretch; }
+        }
+        @media (min-width: 900px) and (max-width: 1100px) {
+          .layout { grid-template-columns: minmax(0,1fr) 300px; }
+          .layout.home-layout { grid-template-columns: minmax(0,1fr); }
         }
 
         /* ---------- KPI ---------- */
         .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 16px; }
-        @media (max-width: 1100px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 899px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 520px) { .kpis { grid-template-columns: 1fr 1fr; gap: 10px; } }
         .kpi {
           border-radius: 18px; padding: 16px; position: relative; overflow: hidden;
@@ -722,7 +726,7 @@ export default function PlayStationClub() {
         .fade-up-5 { animation-delay: .2s }  .fade-up-6 { animation-delay: .24s }
 
         /* ---------- ONE-SCREEN DESKTOP LAYOUT (oxirida turishi shart) ---------- */
-        @media (min-width: 1101px) {
+        @media (min-width: 900px) {
           .ps-app { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; padding-bottom: 78px; }
           .page { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; padding: 12px 18px; width: 100%; align-self: center; margin: 0; }
           .layout.fit { flex: 1; min-height: 0; gap: 12px; }
@@ -767,13 +771,13 @@ export default function PlayStationClub() {
           .bottom-menu { padding: 8px 12px; }
           .bm { padding: 9px 11px; border-radius: 12px; }
         }
-        @media (min-width: 1101px) and (max-height: 820px) {
+        @media (min-width: 900px) and (max-height: 820px) {
           .page-sub { display: none; }
           .chart-val { display: none; }
           .chart { height: 84px; }
           .kpi-val { font-size: 20px; }
         }
-        @media (min-width: 1101px) {
+        @media (min-width: 900px) {
           .home-layout .col-side .panel { padding: 10px 11px; }
           .home-layout .col-side .panel-title { font-size: 13px; }
           .home-layout .col-side .chart { height: 76px; }
@@ -802,6 +806,99 @@ export default function PlayStationClub() {
           .home-layout .dev-grid .dev-btns { gap: 8px; padding-top: 6px; }
           .home-layout .dev-grid .dev-btns .btn { padding: 11px 14px; font-size: 14px; border-radius: 11px; gap: 7px; }
           .home-layout .dev-grid .dev-info-btn { width: 26px; height: 26px; top: 9px; right: 9px; }
+        }
+
+        /* ================= 1024×768 — 4 ta PS bitta ekranga sig'adi ================= */
+        @media (min-width: 900px) {
+          .topbar { padding: 7px 16px; gap: 12px; }
+          .brand { gap: 10px; }
+          .brand-ico { width: 34px; height: 34px; border-radius: 10px; }
+          .brand-ico svg { width: 19px; height: 19px; }
+          .brand-name { font-size: 16px; }
+          .brand-sub { font-size: 10px; margin-top: 2px; }
+          .clock-t { font-size: 14px; }
+          .who { padding: 5px 11px; }
+          .ps-app { padding-bottom: 66px; }
+          .page { padding: 10px 14px; }
+          .home-head { display: none; }
+          .bottom-menu { padding: 6px 12px; }
+          .bm { padding: 7px 11px; }
+
+          /* KPI: ikonka chapda, matn o'ngda — 4 ta bir qatorda, past balandlik */
+          .home-kpis { grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; margin-bottom: 8px; }
+          .home-kpis .kpi { display: grid; grid-template-columns: auto minmax(0,1fr); column-gap: 10px; align-items: center; padding: 7px 12px; border-radius: 14px; }
+          .home-kpis .kpi-row { display: contents; }
+          .home-kpis .kpi-ico { grid-column: 1; grid-row: 1 / span 3; width: 34px; height: 34px; border-radius: 11px; }
+          .home-kpis .kpi-lbl { grid-column: 2; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+          .home-kpis .kpi-val { grid-column: 2; font-size: 21px; margin-top: 0; line-height: 1.15; }
+          .home-kpis .kpi-foot { grid-column: 2; margin-top: 1px; font-size: 10px; white-space: nowrap; overflow: hidden; }
+
+          /* Qurilmalar paneli — qolgan butun balandlikni egallaydi, 2×2 katta kartalar */
+          .home-layout .panel.grow { padding: 9px 11px; }
+          .home-layout .panel.grow .panel-head { margin-bottom: 8px; }
+          .home-layout .panel.grow .panel-title { font-size: 14px; }
+          .home-layout .panel.grow .badge { padding: 4px 10px; font-size: 10.5px; }
+          .home-layout .panel.grow .scroll { display: flex; flex-direction: column; overflow: hidden; padding-right: 0; }
+          .home-layout .dev-grid { flex: 1 1 0; min-height: 0; height: auto; grid-template-columns: repeat(2, minmax(0,1fr)); grid-template-rows: repeat(2, minmax(0,1fr)); gap: 10px; }
+          .home-layout .dev-grid .dev { padding: 10px 14px; border-radius: 16px; overflow: hidden; justify-content: space-between; }
+          .home-layout .dev-grid .dev:hover { transform: none; }
+          .home-layout .dev-grid .dev-top { gap: 12px; align-items: center; }
+          .home-layout .dev-grid .screen { width: 66px; height: 50px; border-radius: 10px; }
+          .home-layout .dev-grid .dev-name { font-size: 17px; }
+          .home-layout .dev-grid .dev-status { font-size: 12px; margin-top: 2px; }
+          .home-layout .dev-grid .dev-meta { font-size: 11px; margin-top: 2px; }
+          .home-layout .dev-grid .dev-info { padding-right: 32px; }
+          .home-layout .dev-grid .dev-live { margin-top: 0; padding: 6px 10px; border-radius: 11px; }
+          .home-layout .dev-grid .bar { height: 4px; margin-bottom: 4px; }
+          .home-layout .dev-grid .timer { font-size: 20px; }
+          .home-layout .dev-grid .amt { font-size: 15px; }
+          .home-layout .dev-grid .dev-remain { font-size: 10.5px; margin-top: 1px; }
+          .home-layout .dev-grid .dev-btns { margin-top: 0; padding-top: 0; }
+          .home-layout .dev-grid .dev-btns .btn { padding: 12px 14px; font-size: 15px; border-radius: 12px; gap: 8px; }
+          .home-layout .dev-grid .dev-info-btn { width: 28px; height: 28px; top: 10px; right: 10px; }
+          .home-layout .dev-grid .dev:not(:has(.dev-live)) { justify-content: center; gap: 14px; }
+          .home-layout .dev-grid .dev:not(:has(.dev-live)) .dev-btns .btn { padding: 16px 14px; font-size: 16px; }
+        }
+
+        /* 1024×~640 (brauzer paneli hisobga olinganda): yana ixchamroq */
+        @media (min-width: 900px) and (max-height: 700px) {
+          .topbar { padding: 5px 16px; }
+          .brand-sub { display: none; }
+          .ps-app { padding-bottom: 60px; }
+          .page { padding: 8px 12px; }
+          .bottom-menu { padding: 5px 12px; }
+          .bm { padding: 6px 11px; }
+          .home-kpis { margin-bottom: 6px; }
+          .home-kpis .kpi { padding: 5px 11px; }
+          .home-kpis .kpi-ico { width: 30px; height: 30px; }
+          .home-kpis .kpi-val { font-size: 19px; }
+          .home-layout .panel.grow { padding: 8px 10px; }
+          .home-layout .panel.grow .panel-head { margin-bottom: 6px; }
+          .home-layout .dev-grid { gap: 8px; }
+          .home-layout .dev-grid .dev { padding: 8px 12px; }
+          .home-layout .dev-grid .screen { width: 54px; height: 41px; }
+          .home-layout .dev-grid .dev-name { font-size: 15.5px; }
+          .home-layout .dev-grid .dev-status { font-size: 11px; }
+          .home-layout .dev-grid .dev-meta { font-size: 10.5px; margin-top: 1px; }
+          .home-layout .dev-grid .timer { font-size: 17px; }
+          .home-layout .dev-grid .amt { font-size: 13.5px; }
+          .home-layout .dev-grid .dev-btns .btn { padding: 9px 12px; font-size: 14px; }
+          .home-layout .dev-grid .dev:not(:has(.dev-live)) .dev-btns .btn { padding: 13px 12px; }
+        }
+
+        /* 1024×768 to'liq ekran (kiosk / PWA) — ortiqcha joy: kattaroq elementlar */
+        @media (min-width: 900px) and (min-height: 740px) {
+          .home-kpis .kpi { padding: 10px 14px; }
+          .home-kpis .kpi-val { font-size: 23px; }
+          .home-layout .dev-grid { gap: 12px; }
+          .home-layout .dev-grid .dev { padding: 14px 16px; }
+          .home-layout .dev-grid .screen { width: 76px; height: 57px; }
+          .home-layout .dev-grid .dev-name { font-size: 19px; }
+          .home-layout .dev-grid .dev-status { font-size: 12.5px; }
+          .home-layout .dev-grid .timer { font-size: 23px; }
+          .home-layout .dev-grid .amt { font-size: 17px; }
+          .home-layout .dev-grid .dev-live { padding: 8px 12px; }
+          .home-layout .dev-grid .dev-btns .btn { padding: 14px 14px; font-size: 16px; }
         }
       `}</style>
 
@@ -838,12 +935,12 @@ export default function PlayStationClub() {
         {/* ============ HOME ============ */}
         {view === 'home' && (
           <>
-            <div className="page-head">
+            <div className="page-head home-head">
               <div className="page-title">PS Klub — Boshqaruv paneli</div>
               <div className="page-sub">Klub faoliyatini qulay boshqaring va barcha jarayonlarni nazorat qiling</div>
             </div>
 
-            <div className="kpis">
+            <div className="kpis home-kpis">
               <div className="kpi fade-up fade-up-1" style={{ background: 'linear-gradient(135deg,#6d28d9,#8b5cf6)' }}>
                 <div className="kpi-row"><div className="kpi-ico"><Users size={16} color="#fff" /></div><div className="kpi-lbl">Bugungi seanslar</div></div>
                 <div className="kpi-val">{stats.today.count}</div>
